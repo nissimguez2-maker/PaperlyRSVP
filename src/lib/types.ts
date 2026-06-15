@@ -20,10 +20,46 @@ export type EventType =
   | "brit-milah"
   | "private";
 
+/**
+ * Per-section RESPONSIVE design controls, edited visually in the Studio.
+ *
+ * These are deliberately "precise but mobile-safe": the editor lets you nudge
+ * these by small amounts (drag handles / sliders), but every value maps to a
+ * responsive rule (rem spacing, clamp()-based type) so the result stays
+ * flawless on any phone. There is no free pixel positioning by design.
+ */
+export interface SectionDesign {
+  /** Vertical padding above the section, in rem (e.g. 0–12). */
+  spaceTop?: number;
+  /** Vertical padding below the section, in rem (e.g. 0–12). */
+  spaceBottom?: number;
+  /** Text/content alignment (logical — mirrors correctly in RTL). */
+  align?: "start" | "center" | "end";
+  /** Content max width. */
+  width?: "narrow" | "normal" | "wide";
+  /** Heading size multiplier (0.7–1.6, default 1) applied on top of a clamp(). */
+  titleScale?: number;
+  /** Section background colour token (from theme). */
+  bg?: "bg" | "surface" | "primary" | "accent";
+}
+
 /** A single section can always be turned off with `enabled: false`. */
 interface Toggleable {
   enabled?: boolean;
+  /** Responsive design overrides for this section (set in the Studio). */
+  design?: SectionDesign;
 }
+
+/** The fixed set of section keys the engine knows how to render. */
+export type SectionKey =
+  | "hero"
+  | "eventDetails"
+  | "schedule"
+  | "location"
+  | "gallery"
+  | "rsvp"
+  | "contact"
+  | "faq";
 
 export interface NavItem {
   label: string;
@@ -175,6 +211,12 @@ export interface SiteContent {
   eventType: EventType;
   meta: SiteMeta;
   nav?: NavItem[];
+  /**
+   * Order the sections render in. Set by drag-reordering in the Studio. Any
+   * known section omitted here falls back to the default order; unknown keys
+   * are ignored.
+   */
+  order?: SectionKey[];
   sections: {
     hero?: HeroSection;
     eventDetails?: EventDetailsSection;

@@ -8,12 +8,30 @@
     "description": "Together with our families, we invite you to celebrate our wedding. Find all the details and RSVP here."
   },
   "nav": [
-    { "label": "Details", "href": "#details" },
-    { "label": "Schedule", "href": "#schedule" },
-    { "label": "Location", "href": "#location" },
-    { "label": "Gallery", "href": "#gallery" },
-    { "label": "RSVP", "href": "#rsvp" },
-    { "label": "FAQ", "href": "#faq" }
+    {
+      "label": "Details",
+      "href": "#details"
+    },
+    {
+      "label": "Schedule",
+      "href": "#schedule"
+    },
+    {
+      "label": "Location",
+      "href": "#location"
+    },
+    {
+      "label": "Gallery",
+      "href": "#gallery"
+    },
+    {
+      "label": "RSVP",
+      "href": "#rsvp"
+    },
+    {
+      "label": "FAQ",
+      "href": "#faq"
+    }
   ],
   "sections": {
     "hero": {
@@ -25,7 +43,10 @@
       "location": "Jerusalem, Israel",
       "image": "/visuals/hero.svg",
       "overlay": 0.45,
-      "cta": { "label": "RSVP", "href": "#rsvp" }
+      "cta": {
+        "label": "RSVP",
+        "href": "#rsvp"
+      }
     },
     "eventDetails": {
       "enabled": true,
@@ -34,10 +55,22 @@
       "body": "After years of love and laughter, we are overjoyed to invite you to share in our simcha. Join us for a chuppah under the stars, followed by dinner, dancing and pure joy late into the night.",
       "image": "/visuals/invitation.svg",
       "items": [
-        { "label": "Date", "value": "14 June 2026 · כ\"ח סיון תשפ\"ו" },
-        { "label": "Reception", "value": "6:00 PM" },
-        { "label": "Chuppah", "value": "7:00 PM" },
-        { "label": "Dress code", "value": "Formal / Black tie optional" }
+        {
+          "label": "Date",
+          "value": "14 June 2026 · כ\"ח סיון תשפ\"ו"
+        },
+        {
+          "label": "Reception",
+          "value": "6:00 PM"
+        },
+        {
+          "label": "Chuppah",
+          "value": "7:00 PM"
+        },
+        {
+          "label": "Dress code",
+          "value": "Formal / Black tie optional"
+        }
       ]
     },
     "schedule": {
@@ -46,10 +79,26 @@
       "title": "Schedule",
       "body": "Here's how the evening will unfold.",
       "items": [
-        { "time": "6:00 PM", "title": "Kabbalat Panim", "description": "Reception, drinks and light bites as guests arrive." },
-        { "time": "7:00 PM", "title": "Chuppah", "description": "The ceremony begins. Please be seated by 6:45 PM." },
-        { "time": "8:00 PM", "title": "Dinner", "description": "Festive seudah and heartfelt toasts." },
-        { "time": "9:30 PM", "title": "Dancing", "description": "Celebrate with us late into the night." }
+        {
+          "time": "6:00 PM",
+          "title": "Kabbalat Panim",
+          "description": "Reception, drinks and light bites as guests arrive."
+        },
+        {
+          "time": "7:00 PM",
+          "title": "Chuppah",
+          "description": "The ceremony begins. Please be seated by 6:45 PM."
+        },
+        {
+          "time": "8:00 PM",
+          "title": "Dinner",
+          "description": "Festive seudah and heartfelt toasts."
+        },
+        {
+          "time": "9:30 PM",
+          "title": "Dancing",
+          "description": "Celebrate with us late into the night."
+        }
       ]
     },
     "location": {
@@ -68,9 +117,18 @@
       "title": "Gallery",
       "body": "A few of our favourite moments together.",
       "images": [
-        { "src": "/visuals/gallery/1.svg", "alt": "Engagement photo" },
-        { "src": "/visuals/gallery/2.svg", "alt": "Walking together" },
-        { "src": "/visuals/gallery/3.svg", "alt": "Celebrating" }
+        {
+          "src": "/visuals/gallery/1.svg",
+          "alt": "Engagement photo"
+        },
+        {
+          "src": "/visuals/gallery/2.svg",
+          "alt": "Walking together"
+        },
+        {
+          "src": "/visuals/gallery/3.svg",
+          "alt": "Celebrating"
+        }
       ]
     },
     "rsvp": {

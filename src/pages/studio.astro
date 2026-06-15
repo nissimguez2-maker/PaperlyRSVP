@@ -1,0 +1,79 @@
+---
+/**
+ * Paperly Studio — YOUR internal visual editor (not for clients).
+ *
+ * This is the design screen you (and your wife) use to build a client's site:
+ * a live phone/desktop preview with click-to-edit text, photo swaps, colours,
+ * fonts, spacing sliders, and drag-reorder. It edits the ACTIVE site
+ * (SITE_ID) and saves straight to that site's content.json / theme.json.
+ *
+ * Primary workflow: run `npm run studio` locally → edit → it writes the files →
+ * you commit & push. (A hosted "Publish to GitHub" button also exists as an
+ * optional bonus — see functions/api/studio-save.ts.)
+ *
+ * The editor chrome is always English / LTR; only the PREVIEW reflects the
+ * site's real language and direction.
+ */
+import "../styles/global.css";
+import { content, theme, SITE_ID } from "../lib/site";
+
+// Bake the current site into the page for the client-side editor to start from.
+const initial = JSON.stringify({ siteId: SITE_ID, content, theme }).replace(/</g, "\\u003c");
+---
+
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Paperly Studio · {SITE_ID}</title>
+    <style is:global>
+      html, body { height: 100%; }
+      body { background: #f3f3f1; overflow: hidden; }
+      /* Device frame for the live preview. */
+      #pl-frame { height: 100%; display: flex; }
+      #pl-frame.pl-phone #pl-frame-iframe {
+        width: 390px; max-width: 100%; height: 100%; margin: 0 auto;
+        border: 1px solid #e5e5e5; border-radius: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.15); background: #fff;
+      }
+      #pl-frame.pl-desktop #pl-frame-iframe {
+        width: 100%; height: 100%; border: 1px solid #e5e5e5; border-radius: 8px; background: #fff;
+      }
+      #pl-frame-iframe { border: 0; }
+    </style>
+  </head>
+  <body>
+    <div class="flex h-full flex-col">
+      <!-- Top bar -->
+      <header class="flex flex-wrap items-center gap-3 bg-neutral-900 px-4 py-2.5 text-white">
+        <span class="font-semibold tracking-wide">Paperly&nbsp;Studio</span>
+        <span class="rounded bg-white/10 px-2 py-0.5 text-xs">{SITE_ID}</span>
+
+        <div class="ms-2 flex overflow-hidden rounded-md border border-white/20">
+          <button data-device="phone" class="px-3 py-1 text-xs ring-2 ring-white">Phone</button>
+          <button data-device="desktop" class="px-3 py-1 text-xs">Desktop</button>
+        </div>
+
+        <span id="pl-status" class="ms-auto text-xs text-neutral-300">Ready</span>
+        <button id="pl-download" class="rounded-md border border-white/30 px-3 py-1.5 text-xs hover:bg-white/10">Download</button>
+        <button id="pl-save" class="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-neutral-200">Publish</button>
+      </header>
+
+      <!-- Body: editor panel + preview stage -->
+      <div class="flex min-h-0 flex-1 flex-col md:flex-row">
+        <aside id="pl-panel" class="h-1/2 w-full shrink-0 overflow-y-auto border-e border-neutral-200 bg-white md:h-auto md:w-[360px]"></aside>
+        <main id="pl-stage" class="min-h-0 flex-1 overflow-hidden bg-neutral-100 p-4">
+          <div id="pl-frame" class="pl-phone"><iframe id="pl-frame-iframe" title="Live preview"></iframe></div>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      import { initStudio } from "../lib/studio";
+      initStudio();
+    </script>
+
+    <script type="application/json" id="pl-initial" is:inline set:html={initial}></script>
+  </body>
+</html>

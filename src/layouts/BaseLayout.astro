@@ -13,6 +13,7 @@
  */
 import "../styles/global.css";
 import { content, theme } from "../lib/site";
+import { themeCss as buildThemeCss } from "../lib/render";
 
 interface Props {
   title?: string;
@@ -24,22 +25,11 @@ const pageTitle = title ?? content.meta.title;
 const pageDescription = description ?? content.meta.description ?? "";
 
 const { language, direction } = content;
-const c = theme.colors;
 const f = theme.fonts;
 
 // Per-site theme: turn theme.json into the `--site-*` CSS variables that
-// global.css maps onto Tailwind's theme. Values are trusted (we author them).
-const themeCss = `:root{
-  --site-bg:${c.bg};
-  --site-surface:${c.surface};
-  --site-ink:${c.ink};
-  --site-muted:${c.muted};
-  --site-primary:${c.primary};
-  --site-accent:${c.accent};
-  --site-line:${c.line};
-  --site-font-heading:${f.heading};
-  --site-font-body:${f.body};
-}`;
+// global.css maps onto Tailwind's theme (shared with the Studio preview).
+const themeCss = buildThemeCss(theme);
 
 // Turnstile public (site) key. Exposed to the browser via the PUBLIC_ prefix.
 // When empty, the forms run in DEV BYPASS mode (no widget rendered).

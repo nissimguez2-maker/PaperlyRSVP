@@ -12,6 +12,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
+    "studio": "npm run build && node scripts/studio-server.mjs",
     "create-site": "node scripts/create-site.ts",
     "db:migrate:local": "wrangler d1 migrations apply paperly-rsvp --local",
     "db:migrate": "wrangler d1 migrations apply paperly-rsvp --remote",

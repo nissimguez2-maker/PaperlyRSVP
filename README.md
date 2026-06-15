@@ -13,9 +13,18 @@ sites/<client>/
   visuals/         ← the client's photos & artwork
 ```
 
-You pick the active site with the `SITE_ID` environment variable, drop in your
-wife's visuals, edit the JSON, and deploy. Built-in **English + Hebrew (RTL)**
-support throughout.
+**Who edits what:** *you and your wife* build each site (she designs, you run
+the tech). **Clients never edit anything** — they only open the finished site to
+read the details and RSVP. You can edit a site two ways:
+
+1. **Paperly Studio (visual editor)** — `npm run studio` opens a design screen
+   with a live phone preview where you click to edit text, swap photos, change
+   colours, nudge spacing, and reorder sections. It saves straight to the site's
+   files. **This is the main way you'll work.** See [Paperly Studio](#paperly-studio-visual-editor).
+2. **Editing the JSON directly** — for quick tweaks or automation.
+
+Built-in **English + Hebrew (RTL)** support throughout, and the published site
+is **mobile-first** (95%+ of guests open on a phone).
 
 ---
 
@@ -42,12 +51,18 @@ no SSR server is needed.
 
 ```
 src/
-  components/      Hero, EventDetails, Schedule, Location, Gallery,
-                   RSVPForm, ContactForm, FAQ, Nav, Footer
   layouts/         BaseLayout.astro (lang/dir, theme variables, fonts)
-  pages/           index.astro (the invitation) + thank-you.astro
-  lib/             site.ts (loads active site), i18n.ts (EN/HE labels), types.ts
-  styles/          global.css (Tailwind + theme variable mapping)
+  pages/           index.astro (the invitation), thank-you.astro, studio.astro (editor)
+  lib/
+    render.ts        ★ shared renderer — draws every section. Used by BOTH the
+                       published site AND the Studio preview (one source of truth).
+    design.ts        responsive design tokens (spacing/align/size → CSS)
+    studio.ts        the in-browser visual editor (client-side)
+    schema.ts        which fields each section exposes in the Studio
+    site.ts          loads the active site (SITE_ID)
+    i18n.ts          English / Hebrew label defaults
+    types.ts         content.json + theme.json types
+  styles/          global.css (Tailwind + theme variable mapping + mobile polish)
 
 functions/         Cloudflare Pages Functions (the backend)
   _shared.ts       Turnstile verify, Basic Auth, helpers
@@ -55,7 +70,8 @@ functions/         Cloudflare Pages Functions (the backend)
   api/
     rsvp.ts          POST /api/rsvp
     contact.ts       POST /api/contact
-    export-rsvps.ts  GET  /api/export-rsvps  (password-protected CSV)
+    export-rsvps.ts  GET  /api/export-rsvps   (password-protected CSV)
+    studio-save.ts   POST /api/studio-save     (optional hosted "Publish")
 
 sites/
   demo/            Generic demo client (English, LTR) — copy this for new sites
@@ -64,12 +80,17 @@ sites/
     visuals/
 
 scripts/
-  create-site.ts   Scaffolds a new client site
-  sync-visuals.mjs Copies the active site's visuals into the build
+  create-site.ts    Scaffolds a new client site
+  sync-visuals.mjs  Copies the active site's visuals into the build
+  studio-server.mjs Local server for the Studio (npm run studio)
 
 migrations/
   0001_init.sql    D1 schema (rsvps + contact_messages tables)
 ```
+
+> **To change how a section *looks* for every client**, edit `src/lib/render.ts`
+> (it powers both the site and the editor). **To change a single client's words
+> or design**, use the Studio or edit that client's `content.json` / `theme.json`.
 
 ---
 
@@ -107,6 +128,47 @@ SITE_ID=smith-wedding npm run dev
 > npm run db:migrate:local      # create the tables in a local D1
 > npm run pages:dev             # builds, then serves with wrangler (functions on)
 > ```
+
+---
+
+## Paperly Studio (visual editor)
+
+The Studio is **your** design screen (you + your wife) — not something clients
+touch. It shows a **live phone/desktop preview** and lets you edit everything
+visually, then writes the changes straight to the active site's files.
+
+```bash
+SITE_ID=smith-wedding npm run studio
+# → open http://localhost:8787/studio
+```
+
+In the Studio you can:
+
+- **Sections tab** — click a section (in the list or the preview) to edit its
+  text and photos; toggle sections **On/Off**; **drag ▲▼ to reorder** them; and
+  fine-tune **layout** with sliders for *space above/below*, *title size*,
+  *alignment*, *width*, and *background*. These are precise **but stay
+  mobile-perfect** — there's no fragile free-dragging (by design, for the 95%
+  mobile audience).
+- **Theme tab** — pick the colours and fonts (your wife's palette).
+- **Settings tab** — site name, description, language/direction (EN ↔ Hebrew/RTL),
+  the navigation menu, and footer.
+
+**Saving — three options:**
+
+| Button             | What it does                                                                 |
+| ------------------ | ---------------------------------------------------------------------------- |
+| **Save to files**  | Appears when running `npm run studio`. Writes `content.json`, `theme.json`, and uploaded images into `sites/<SITE_ID>/`. Then `git commit` + `git push`. |
+| **Download**       | Downloads `content.json` + `theme.json` so you can drop them in manually.    |
+| **Publish**        | *(optional, hosted)* Commits to GitHub via `/api/studio-save` so Cloudflare redeploys — lets your wife tweak design from a URL with no terminal. Needs `GITHUB_TOKEN` + `GITHUB_REPO` (see `.env.example`). |
+
+Typical loop: `npm run studio` → edit visually → **Save to files** → commit &
+push → Cloudflare redeploys.
+
+> The `/studio` page also deploys with each site (noindexed, and Publish is
+> password-gated). If you'd rather it never ship to clients, delete
+> `src/pages/studio.astro` — the local `npm run studio` workflow still works
+> because the server builds the site for you.
 
 ---
 
@@ -286,8 +348,11 @@ database bindings** → add a binding named **`DB`** pointing at `paperly-rsvp`.
 | `SITE_ID`                   | Build + Funcs | Which `sites/<id>/` to build and scope admin/export to. e.g. `demo`     |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Build         | Turnstile **public** widget key (rendered into the forms)               |
 | `TURNSTILE_SECRET_KEY`      | Functions     | Turnstile **secret** key (server-side verification)                     |
-| `ADMIN_PASSWORD`            | Functions     | Password for `/admin` and `/api/export-rsvps` (HTTP Basic Auth)         |
+| `ADMIN_PASSWORD`            | Functions     | Password for `/admin`, CSV export, and Studio Publish (HTTP Basic Auth) |
 | `SITE_URL`                  | Build (opt.)  | Production URL for canonical links                                      |
+| `GITHUB_TOKEN`              | Functions (opt.) | Enables the Studio's hosted **Publish** button (commits to GitHub)   |
+| `GITHUB_REPO`               | Functions (opt.) | `owner/name` of this repo, for hosted Publish                        |
+| `GITHUB_BRANCH`             | Functions (opt.) | Branch to commit to (default `main`)                                 |
 
 > **Turnstile dev bypass:** if `TURNSTILE_SECRET_KEY` is empty, the Functions
 > skip verification so forms work in local dev without a Turnstile account.
@@ -320,6 +385,7 @@ otherwise add the CNAME record Cloudflare shows you. HTTPS is provisioned for yo
 | Command                     | What it does                                            |
 | --------------------------- | ------------------------------------------------------- |
 | `npm run dev`               | Local dev server (static site)                          |
+| `npm run studio`            | **Visual editor** — build + serve the Studio at :8787   |
 | `npm run build`             | Build the active `SITE_ID` into `dist/`                 |
 | `npm run preview`           | Preview the built site                                  |
 | `npm run pages:dev`         | Build + serve with Functions & D1 (wrangler)            |

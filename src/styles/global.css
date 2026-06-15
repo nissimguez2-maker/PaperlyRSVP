@@ -41,6 +41,7 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%; /* don't auto-zoom text on rotate (mobile) */
 }
 
 body {
@@ -49,6 +50,12 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden; /* mobile-native: never sideways-scroll */
+}
+
+/* Honour anchor scrolling under the sticky header. */
+:target {
+  scroll-margin-top: 5rem;
 }
 
 h1, h2, h3, h4 {
@@ -79,8 +86,9 @@ h1, h2, h3, h4 {
   .btn,
   .btn-primary,
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-8 py-3
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-8 py-3
            text-sm uppercase tracking-[0.18em] transition-colors duration-200;
+    touch-action: manipulation; /* snappier taps, no 300ms delay */
   }
   .btn-primary {
     @apply bg-primary text-white hover:bg-accent;
@@ -95,6 +103,18 @@ h1, h2, h3, h4 {
   .field-input {
     @apply w-full rounded-lg border border-line bg-surface px-4 py-3 text-ink
            outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20;
+    font-size: 16px; /* >=16px stops iOS Safari from zooming into inputs */
+  }
+
+  /* Floating mobile RSVP button (mobile-native quick action). */
+  .fab {
+    @apply fixed inset-x-4 bottom-4 z-50 rounded-full bg-primary px-6 py-3.5 text-center
+           text-sm uppercase tracking-[0.18em] text-white shadow-lg transition
+           hover:bg-accent sm:hidden;
+    touch-action: manipulation;
+  }
+  .fab.is-hidden {
+    @apply pointer-events-none translate-y-24 opacity-0;
   }
 }
 

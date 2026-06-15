@@ -1,0 +1,392 @@
+/**
+ * Shared, framework-free renderer.
+ *
+ * Every section is rendered by a plain function that returns an HTML string.
+ * This module is used by BOTH:
+ *   - the published static site (src/pages/index.astro renders it once at build), and
+ *   - the Studio editor (src/lib/studio.ts re-renders it live on every edit).
+ *
+ * Because there is ONE renderer, the editor preview is always pixel-identical
+ * to what gets published — they can never drift apart.
+ *
+ * Design/spacing/alignment come from the responsive tokens in src/lib/design.ts
+ * so the visual controls stay mobile-safe.
+ */
+import type {
+  SiteContent, SiteTheme, SectionKey, NavItem,
+  HeroSection, EventDetailsSection, ScheduleSection, LocationSection,
+  GallerySection, RsvpSection, ContactSection, FaqSection, FooterContent,
+} from "./types";
+import type { Dictionary } from "./i18n";
+import { getDictionary, withOverrides } from "./i18n";
+import {
+  bgClass, spacingStyle, containerClass, titleStyle, resolveDesign,
+} from "./design";
+
+export interface RenderCtx {
+  labels: Dictionary;
+  turnstileSiteKey?: string;
+  /** True when rendering inside the Studio preview (disables real form posts). */
+  editor?: boolean;
+}
+
+export const DEFAULT_ORDER: SectionKey[] = [
+  "hero", "eventDetails", "schedule", "location", "gallery", "rsvp", "contact", "faq",
+];
+
+/** Anchor id for each section (used by nav links). */
+const ANCHORS: Record<SectionKey, string> = {
+  hero: "top", eventDetails: "details", schedule: "schedule", location: "location",
+  gallery: "gallery", rsvp: "rsvp", contact: "contact", faq: "faq",
+};
+
+// --- small helpers ---------------------------------------------------------
+
+/** HTML-escape text content / attribute values. */
+export function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+/** Render a value preserving line breaks. */
+function multiline(value?: string): string {
+  return esc(value).replace(/\n/g, "<br>");
+}
+
+/** Colour palette derived from a section's background, so text stays legible. */
+function palette(key: SectionKey, d?: HeroSection["design"]) {
+  const bg = resolveDesign(key, d).bg;
+  const dark = bg === "primary" || bg === "accent";
+  return {
+    heading: dark ? "text-white" : "text-primary",
+    eyebrow: dark ? "text-white/70" : "text-accent",
+    body: dark ? "text-white/90" : "text-muted",
+    line: dark ? "border-white/30" : "border-line",
+  };
+}
+
+/** Build the outer <section> open tag with id, design background + spacing. */
+function open(key: SectionKey, design: HeroSection["design"]): string {
+  const id = ANCHORS[key];
+  return `<section id="${id}" data-pl-section="${key}" class="${bgClass(key, design)}" style="${spacingStyle(key, design)}">`;
+}
+
+// --- sections --------------------------------------------------------------
+
+function renderNav(brand: string, items: NavItem[] | undefined): string {
+  const links = items ?? [];
+  if (!brand && links.length === 0) return "";
+  const desktop = links
+    .map((i) => `<li><a href="${esc(i.href)}" class="text-sm tracking-wide text-muted transition-colors hover:text-accent">${esc(i.label)}</a></li>`)
+    .join("");
+  const mobile = links
+    .map((i) => `<li><a href="${esc(i.href)}" class="block rounded-lg px-3 py-3 text-base text-ink hover:bg-bg hover:text-accent">${esc(i.label)}</a></li>`)
+    .join("");
+  return `
+<header class="sticky top-0 z-40 border-b border-line/60 bg-bg/85 backdrop-blur">
+  <nav class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
+    <a href="#top" class="font-heading text-lg tracking-wide text-primary">${esc(brand)}</a>
+    ${links.length ? `
+    <ul class="hidden items-center gap-7 md:flex">${desktop}</ul>
+    <details class="relative md:hidden">
+      <summary class="flex h-10 w-10 cursor-pointer list-none items-center justify-center text-2xl leading-none text-primary">☰</summary>
+      <ul class="absolute end-0 mt-2 w-56 rounded-xl border border-line bg-surface p-2 shadow-lg">${mobile}</ul>
+    </details>` : ""}
+  </nav>
+</header>`;
+}
+
+function renderHero(data: HeroSection): string {
+  const overlay = data.overlay ?? 0.4;
+  const bg = data.image
+    ? `<img src="${esc(data.image)}" alt="" class="absolute inset-0 h-full w-full object-cover" fetchpriority="high">`
+    : `<div class="absolute inset-0 bg-gradient-to-b from-primary to-accent/70"></div>`;
+  const meta = (data.date || data.location)
+    ? `<div class="mt-7 flex flex-col items-center gap-1 text-xs uppercase tracking-[0.22em] text-white/85 sm:text-sm">
+        ${data.date ? `<span data-pl-field="date">${esc(data.date)}</span>` : ""}
+        ${data.date && data.location ? `<span class="h-px w-10 bg-white/40"></span>` : ""}
+        ${data.location ? `<span data-pl-field="location">${esc(data.location)}</span>` : ""}
+      </div>` : "";
+  const cta = data.cta
+    ? `<div class="mt-9"><a href="${esc(data.cta.href)}" class="btn border border-white/70 text-white hover:bg-white hover:text-primary">${esc(data.cta.label)}</a></div>`
+    : "";
+  return `
+<section id="top" data-pl-section="hero" class="relative flex min-h-[100svh] items-center justify-center overflow-hidden">
+  ${bg}
+  <div class="absolute inset-0 bg-black" style="opacity:${overlay}"></div>
+  <div class="relative z-10 mx-auto w-full max-w-3xl px-6 text-center text-white">
+    ${data.eyebrow ? `<p data-pl-field="eyebrow" class="mb-5 text-[0.7rem] uppercase tracking-[0.3em] text-white/80 sm:text-xs">${esc(data.eyebrow)}</p>` : ""}
+    <h1 data-pl-field="title" class="font-heading leading-[1.05]" style="font-size:calc(clamp(2.75rem, 13vw, 5rem) * ${resolveDesign("hero", data.design).titleScale || 1})">${esc(data.title)}</h1>
+    ${data.subtitle ? `<p data-pl-field="subtitle" class="mt-3 font-heading text-xl text-white/90 sm:text-3xl">${esc(data.subtitle)}</p>` : ""}
+    ${meta}
+    ${cta}
+  </div>
+</section>`;
+}
+
+function renderEventDetails(data: EventDetailsSection): string {
+  const p = palette("eventDetails", data.design);
+  const items = (data.items ?? [])
+    .map((it) => `
+      <div class="border-t ${p.line} pt-4 text-start">
+        <dt class="text-xs uppercase tracking-[0.2em] text-accent">${esc(it.label)}</dt>
+        <dd class="mt-1 text-lg ${p.heading}">${esc(it.value)}</dd>
+      </div>`)
+    .join("");
+  const text = `
+    <div>
+      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+      ${data.title ? `<h2 class="mb-6 font-heading ${p.heading}" style="${titleStyle("eventDetails", data.design)}">${esc(data.title)}</h2>` : ""}
+      ${data.body ? `<p class="text-lg leading-relaxed ${p.body}">${multiline(data.body)}</p>` : ""}
+      ${items ? `<dl class="mt-9 grid grid-cols-1 gap-6 sm:grid-cols-2">${items}</dl>` : ""}
+    </div>`;
+  const image = data.image
+    ? `<div class="order-first md:order-last"><img src="${esc(data.image)}" alt="${esc(data.title ?? "")}" class="mx-auto w-full max-w-sm rounded-2xl border ${p.line} object-cover shadow-sm"></div>`
+    : "";
+  return `${open("eventDetails", data.design)}
+  <div class="${containerClass("eventDetails", data.design)}">
+    <div class="grid items-center gap-10 md:grid-cols-2">${text}${image}</div>
+  </div>
+</section>`;
+}
+
+function renderSchedule(data: ScheduleSection): string {
+  const p = palette("schedule", data.design);
+  const items = (data.items ?? [])
+    .map((it) => `
+      <li class="relative text-start">
+        <span class="absolute -start-[calc(2rem+5px)] top-2 h-3 w-3 rounded-full bg-accent"></span>
+        ${it.time ? `<p class="text-sm uppercase tracking-[0.2em] text-accent">${esc(it.time)}</p>` : ""}
+        <h3 class="mt-1 font-heading text-2xl ${p.heading}">${esc(it.title)}</h3>
+        ${it.description ? `<p class="mt-1 ${p.body}">${esc(it.description)}</p>` : ""}
+      </li>`)
+    .join("");
+  return `${open("schedule", data.design)}
+  <div class="${containerClass("schedule", data.design)}">
+    <div class="mb-10">
+      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+      ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("schedule", data.design)}">${esc(data.title)}</h2>` : ""}
+      ${data.body ? `<p class="mx-auto mt-4 max-w-2xl ${p.body}">${esc(data.body)}</p>` : ""}
+    </div>
+    <ol class="mx-auto max-w-2xl space-y-8 border-s-2 ${p.line} ps-8">${items}</ol>
+  </div>
+</section>`;
+}
+
+function renderLocation(data: LocationSection, labels: Dictionary): string {
+  const p = palette("location", data.design);
+  const embed = data.mapEmbedUrl
+    ? `<div class="overflow-hidden rounded-2xl border ${p.line} shadow-sm"><iframe src="${esc(data.mapEmbedUrl)}" title="${esc(data.venue ?? "Map")}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="h-72 w-full md:h-80"></iframe></div>`
+    : "";
+  return `${open("location", data.design)}
+  <div class="${containerClass("location", data.design)}">
+    <div class="mb-10">
+      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+      ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("location", data.design)}">${esc(data.title)}</h2>` : ""}
+    </div>
+    <div class="grid items-center gap-10 md:grid-cols-2">
+      <div class="text-center md:text-start">
+        ${data.venue ? `<h3 class="font-heading text-3xl ${p.heading}">${esc(data.venue)}</h3>` : ""}
+        ${data.address ? `<p class="mt-3 text-lg ${p.body}">${multiline(data.address)}</p>` : ""}
+        ${data.body ? `<p class="mt-4 ${p.body}">${esc(data.body)}</p>` : ""}
+        ${data.mapUrl ? `<div class="mt-6"><a href="${esc(data.mapUrl)}" target="_blank" rel="noopener" class="btn-outline">${esc(labels.directions)}</a></div>` : ""}
+      </div>
+      ${embed}
+    </div>
+  </div>
+</section>`;
+}
+
+function renderGallery(data: GallerySection): string {
+  const p = palette("gallery", data.design);
+  const imgs = (data.images ?? [])
+    .map((im) => `<img src="${esc(im.src)}" alt="${esc(im.alt ?? "")}" loading="lazy" class="mb-4 w-full break-inside-avoid rounded-xl object-cover shadow-sm transition-transform duration-300 hover:scale-[1.02]">`)
+    .join("");
+  return `${open("gallery", data.design)}
+  <div class="${containerClass("gallery", data.design)}">
+    <div class="mb-10">
+      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+      ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("gallery", data.design)}">${esc(data.title)}</h2>` : ""}
+      ${data.body ? `<p class="mx-auto mt-4 max-w-2xl ${p.body}">${esc(data.body)}</p>` : ""}
+    </div>
+    <div class="columns-2 gap-4 md:columns-3">${imgs}</div>
+  </div>
+</section>`;
+}
+
+function formAttrs(action: string, editor?: boolean): string {
+  return editor ? `data-editor-form` : `method="POST" action="${action}"`;
+}
+
+function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): string {
+  const L = ctx.labels;
+  const p = palette("rsvp", data.design);
+  const star = `<span class="text-accent" title="${esc(L.required)}">*</span>`;
+  const ts = ctx.turnstileSiteKey && !ctx.editor ? `<div class="cf-turnstile" data-sitekey="${esc(ctx.turnstileSiteKey)}"></div>` : "";
+  return `${open("rsvp", data.design)}
+  <div class="${containerClass("rsvp", data.design)}">
+    <div class="mb-9">
+      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+      ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("rsvp", data.design)}">${esc(data.title)}</h2>` : ""}
+      ${data.body ? `<p class="mx-auto mt-4 max-w-xl ${p.body}">${esc(data.body)}</p>` : ""}
+      ${data.deadlineNote ? `<p class="mt-4 text-sm uppercase tracking-[0.2em] text-accent">${esc(data.deadlineNote)}</p>` : ""}
+    </div>
+    <form ${formAttrs("/api/rsvp", ctx.editor)} class="space-y-5 rounded-2xl border border-line bg-surface p-5 text-start shadow-sm sm:p-8">
+      <input type="hidden" name="site_id" value="${esc(content.siteId)}">
+      <input type="hidden" name="language" value="${esc(content.language)}">
+      <div>
+        <label class="field-label" for="rsvp-name">${esc(L.fullName)} ${star}</label>
+        <input class="field-input" id="rsvp-name" name="full_name" type="text" required autocomplete="name">
+      </div>
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div><label class="field-label" for="rsvp-email">${esc(L.email)}</label><input class="field-input" id="rsvp-email" name="email" type="email" autocomplete="email"></div>
+        <div><label class="field-label" for="rsvp-phone">${esc(L.phone)}</label><input class="field-input" id="rsvp-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"></div>
+      </div>
+      <fieldset>
+        <legend class="field-label">${esc(L.attending)} ${star}</legend>
+        <div class="mt-1 flex flex-col gap-3 sm:flex-row">
+          <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-lg border border-line bg-bg px-4 py-3 has-[:checked]:border-accent has-[:checked]:bg-accent/5">
+            <input type="radio" name="attending" value="yes" required data-attending="yes" class="accent-[var(--site-accent)]"><span>${esc(L.attendingYes)}</span>
+          </label>
+          <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-lg border border-line bg-bg px-4 py-3 has-[:checked]:border-accent has-[:checked]:bg-accent/5">
+            <input type="radio" name="attending" value="no" data-attending="no" class="accent-[var(--site-accent)]"><span>${esc(L.attendingNo)}</span>
+          </label>
+        </div>
+      </fieldset>
+      <div data-guest-fields class="space-y-5">
+        <div><label class="field-label" for="rsvp-guests">${esc(L.guests)}</label><input class="field-input" id="rsvp-guests" name="guests" type="number" min="0" inputmode="numeric" value="1"></div>
+        <div><label class="field-label" for="rsvp-guest-names">${esc(L.guestNames)}</label><textarea class="field-input" id="rsvp-guest-names" name="guest_names" rows="2" placeholder="${esc(L.guestNamesHint)}"></textarea></div>
+        <div><label class="field-label" for="rsvp-dietary">${esc(L.dietary)}</label><textarea class="field-input" id="rsvp-dietary" name="dietary" rows="2" placeholder="${esc(L.dietaryHint)}"></textarea></div>
+      </div>
+      <div><label class="field-label" for="rsvp-message">${esc(L.message)}</label><textarea class="field-input" id="rsvp-message" name="message" rows="3"></textarea></div>
+      ${ts}
+      <button type="submit" class="btn-primary w-full">${esc(L.rsvpSubmit)}</button>
+    </form>
+  </div>
+</section>`;
+}
+
+function renderContact(data: ContactSection, content: SiteContent, ctx: RenderCtx): string {
+  const L = ctx.labels;
+  const p = palette("contact", data.design);
+  const star = `<span class="text-accent" title="${esc(L.required)}">*</span>`;
+  const ts = ctx.turnstileSiteKey && !ctx.editor ? `<div class="cf-turnstile" data-sitekey="${esc(ctx.turnstileSiteKey)}"></div>` : "";
+  return `${open("contact", data.design)}
+  <div class="${containerClass("contact", data.design)}">
+    <div class="mb-9">
+      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+      ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("contact", data.design)}">${esc(data.title)}</h2>` : ""}
+      ${data.body ? `<p class="mx-auto mt-4 ${p.body}">${esc(data.body)}</p>` : ""}
+    </div>
+    <form ${formAttrs("/api/contact", ctx.editor)} class="space-y-5 rounded-2xl border border-line bg-bg p-5 text-start shadow-sm sm:p-8">
+      <input type="hidden" name="site_id" value="${esc(content.siteId)}">
+      <input type="hidden" name="language" value="${esc(content.language)}">
+      <div><label class="field-label" for="contact-name">${esc(L.contactName)} ${star}</label><input class="field-input" id="contact-name" name="name" type="text" required autocomplete="name"></div>
+      <div><label class="field-label" for="contact-email">${esc(L.contactEmail)}</label><input class="field-input" id="contact-email" name="email" type="email" autocomplete="email"></div>
+      <div><label class="field-label" for="contact-message">${esc(L.contactMessage)} ${star}</label><textarea class="field-input" id="contact-message" name="message" rows="4" required></textarea></div>
+      ${ts}
+      <button type="submit" class="btn-primary w-full">${esc(L.contactSubmit)}</button>
+    </form>
+  </div>
+</section>`;
+}
+
+function renderFaq(data: FaqSection): string {
+  const p = palette("faq", data.design);
+  const items = (data.items ?? [])
+    .map((it) => `
+      <details class="group py-5 text-start">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-lg ${p.heading}">
+          <span class="font-heading">${esc(it.question)}</span>
+          <span class="text-accent transition-transform duration-200 group-open:rotate-45">+</span>
+        </summary>
+        <p class="mt-3 leading-relaxed ${p.body}">${multiline(it.answer)}</p>
+      </details>`)
+    .join("");
+  return `${open("faq", data.design)}
+  <div class="${containerClass("faq", data.design)}">
+    <div class="mb-9">
+      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+      ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("faq", data.design)}">${esc(data.title)}</h2>` : ""}
+    </div>
+    <div class="mx-auto max-w-3xl divide-y ${p.line} border-y ${p.line}">${items}</div>
+  </div>
+</section>`;
+}
+
+function renderFooter(data: FooterContent | undefined): string {
+  const year = new Date().getFullYear();
+  return `
+<footer class="border-t border-line bg-surface py-12 text-center">
+  <div class="mx-auto max-w-5xl px-6">
+    ${data?.message ? `<p class="font-heading text-2xl text-primary">${esc(data.message)}</p>` : ""}
+    ${data?.credit ? `<p class="mt-3 text-sm text-muted">${esc(data.credit)}</p>` : ""}
+    <p class="mt-3 text-xs uppercase tracking-[0.2em] text-muted/70">© ${year}</p>
+  </div>
+</footer>`;
+}
+
+// --- orchestration ---------------------------------------------------------
+
+/** Resolve the section render order from content.order + defaults. */
+export function resolveOrder(content: SiteContent): SectionKey[] {
+  const wanted = (content.order ?? []).filter((k) => DEFAULT_ORDER.includes(k));
+  const seen = new Set(wanted);
+  return [...wanted, ...DEFAULT_ORDER.filter((k) => !seen.has(k))];
+}
+
+/** Resolve form labels (language defaults + per-site overrides). */
+export function resolveLabels(content: SiteContent): Dictionary {
+  const dict = getDictionary(content.language);
+  const r = content.sections.rsvp?.labels ?? {};
+  const c = content.sections.contact?.labels ?? {};
+  return withOverrides(dict, {
+    fullName: r.fullName, email: r.email, phone: r.phone, attending: r.attending,
+    attendingYes: r.attendingYes, attendingNo: r.attendingNo, guests: r.guests,
+    guestNames: r.guestNames, dietary: r.dietary, message: r.message, rsvpSubmit: r.submit,
+    contactName: c.name, contactEmail: c.email, contactMessage: c.message, contactSubmit: c.submit,
+  });
+}
+
+/** Render a single section by key (returns "" when missing/disabled). */
+export function renderSection(key: SectionKey, content: SiteContent, ctx: RenderCtx): string {
+  const s = content.sections[key];
+  if (!s || s.enabled === false) return "";
+  switch (key) {
+    case "hero": return renderHero(s as HeroSection);
+    case "eventDetails": return renderEventDetails(s as EventDetailsSection);
+    case "schedule": return renderSchedule(s as ScheduleSection);
+    case "location": return renderLocation(s as LocationSection, ctx.labels);
+    case "gallery": return renderGallery(s as GallerySection);
+    case "rsvp": return renderRsvp(s as RsvpSection, content, ctx);
+    case "contact": return renderContact(s as ContactSection, content, ctx);
+    case "faq": return renderFaq(s as FaqSection);
+  }
+}
+
+/** Render the whole page body: nav + ordered sections + footer. */
+export function renderApp(content: SiteContent, ctx: RenderCtx): string {
+  const sections = resolveOrder(content).map((k) => renderSection(k, content, ctx)).join("\n");
+
+  // Floating mobile RSVP shortcut (mobile-native quick action), skipped in the
+  // editor preview and when the RSVP section is off.
+  const rsvp = content.sections.rsvp;
+  const fab = !ctx.editor && rsvp && rsvp.enabled !== false
+    ? `<a href="#rsvp" id="pl-fab" class="fab">${esc(rsvp.title || ctx.labels.rsvpSubmit)}</a>`
+    : "";
+
+  return `${renderNav(content.meta.title, content.nav)}
+<main>
+${sections}
+</main>
+${renderFooter(content.footer)}
+${fab}`;
+}
+
+/** Build the per-site theme CSS (the `:root{ --site-* }` block). */
+export function themeCss(theme: SiteTheme): string {
+  const c = theme.colors;
+  const f = theme.fonts;
+  return `:root{--site-bg:${c.bg};--site-surface:${c.surface};--site-ink:${c.ink};--site-muted:${c.muted};--site-primary:${c.primary};--site-accent:${c.accent};--site-line:${c.line};--site-font-heading:${f.heading};--site-font-body:${f.body};}`;
+}
