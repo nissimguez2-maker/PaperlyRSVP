@@ -1,0 +1,35 @@
+---
+/**
+ * Control panel dashboard. Static shell; data loads client-side from the admin
+ * APIs (which require the admin password — prompted on first load). Lists all
+ * sites grouped by Live / In progress / Paused / Past with manage actions.
+ */
+---
+
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Paperly · Control panel</title>
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body class="min-h-screen bg-neutral-50 text-neutral-900">
+    <header class="flex flex-wrap items-center gap-3 bg-neutral-900 px-5 py-3 text-white">
+      <span class="font-semibold tracking-wide">Paperly</span>
+      <span class="rounded bg-white/10 px-2 py-0.5 text-xs">Control panel</span>
+      <button id="pl-new" class="ms-auto rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-200">+ New site</button>
+    </header>
+
+    <main class="mx-auto max-w-4xl px-5 py-8">
+      <div id="pl-sites"><p class="text-neutral-400">Loading…</p></div>
+    </main>
+
+    <script>
+      import { initDashboard } from "../../lib/dashboard";
+      initDashboard();
+    </script>
+  </body>
+</html>

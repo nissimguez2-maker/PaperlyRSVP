@@ -5,8 +5,8 @@ dist/
 # dependencies
 node_modules/
 
-# generated: active site visuals are copied here by scripts/sync-visuals.mjs
-public/visuals/
+# generated: Tailwind CLI compiles the stylesheet here
+public/site.css
 
 # env / secrets
 .env

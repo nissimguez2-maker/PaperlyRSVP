@@ -1,52 +1,56 @@
 ---
 /**
- * Thank-you page. The Functions redirect here after a successful submission:
- *   /thank-you?type=rsvp     (after RSVP)
- *   /thank-you?type=contact  (after contact message)
- * Text is in the site's language. A tiny inline script swaps the wording based
- * on the ?type= param without needing a separate page per form.
+ * Generic thank-you page, shared by every client site. The forms redirect here
+ * with ?type=rsvp|contact&lang=en|he; a tiny script shows the right localized
+ * message. Self-contained (links the shared /site.css).
  */
-import BaseLayout from "../layouts/BaseLayout.astro";
-import { content } from "../lib/site";
-import { getDictionary } from "../lib/i18n";
-
-const dict = getDictionary(content.language);
 ---
 
-<BaseLayout title={`${dict.thankYouRsvpTitle} · ${content.meta.title}`}>
-  <main class="flex min-h-screen items-center justify-center bg-bg px-6 py-24 text-center">
-    <div class="reveal max-w-lg">
-      <p class="eyebrow mb-4">{content.meta.title}</p>
-      <h1
-        id="ty-title"
-        class="section-title"
-        data-rsvp={dict.thankYouRsvpTitle}
-        data-contact={dict.thankYouContactTitle}
-      >
-        {dict.thankYouRsvpTitle}
-      </h1>
-      <p
-        id="ty-body"
-        class="mt-5 text-lg text-muted"
-        data-rsvp={dict.thankYouRsvpBody}
-        data-contact={dict.thankYouContactBody}
-      >
-        {dict.thankYouRsvpBody}
-      </p>
-      <div class="mt-10">
-        <a href="/" class="btn-outline">{dict.backHome}</a>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Thank you</title>
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body class="bg-bg text-ink">
+    <main class="flex min-h-screen items-center justify-center px-6 py-24 text-center">
+      <div class="max-w-lg">
+        <h1 id="ty-title" class="font-heading text-4xl text-primary sm:text-5xl">Thank you!</h1>
+        <p id="ty-body" class="mt-5 text-lg text-muted"></p>
+        <div class="mt-10"><a id="ty-back" href="/" class="btn-outline">Back to the invitation</a></div>
       </div>
-    </div>
-  </main>
-</BaseLayout>
+    </main>
 
-<script is:inline>
-  // Swap copy for contact submissions. Defaults to the RSVP wording.
-  const type = new URLSearchParams(location.search).get("type");
-  if (type === "contact") {
-    const title = document.getElementById("ty-title");
-    const body = document.getElementById("ty-body");
-    if (title) title.textContent = title.dataset.contact;
-    if (body) body.textContent = body.dataset.contact;
-  }
-</script>
+    <script is:inline>
+      const STR = {
+        en: {
+          rsvpTitle: "Thank you!",
+          rsvpBody: "Your RSVP has been received. We can't wait to celebrate with you.",
+          contactTitle: "Message sent",
+          contactBody: "Thank you for reaching out — we'll get back to you soon.",
+          back: "Back to the invitation",
+        },
+        he: {
+          rsvpTitle: "תודה רבה!",
+          rsvpBody: "אישור ההגעה התקבל. מחכים לחגוג אתכם!",
+          contactTitle: "ההודעה נשלחה",
+          contactBody: "תודה שפניתם אלינו — נחזור אליכם בהקדם.",
+          back: "חזרה להזמנה",
+        },
+      };
+      const q = new URLSearchParams(location.search);
+      const lang = q.get("lang") === "he" ? "he" : "en";
+      const isContact = q.get("type") === "contact";
+      const s = STR[lang];
+      if (lang === "he") document.documentElement.setAttribute("dir", "rtl");
+      document.documentElement.setAttribute("lang", lang);
+      document.getElementById("ty-title").textContent = isContact ? s.contactTitle : s.rsvpTitle;
+      document.getElementById("ty-body").textContent = isContact ? s.contactBody : s.rsvpBody;
+      document.getElementById("ty-back").textContent = s.back;
+    </script>
+  </body>
+</html>

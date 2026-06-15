@@ -10,12 +10,24 @@
 export interface Env {
   /** D1 database binding (configured in wrangler.toml and the Pages dashboard). */
   DB: D1Database;
+  /** R2 bucket for HD images (originals stored as-is). Optional in dev. */
+  MEDIA?: R2Bucket;
+  /** Public base URL for media; falls back to same-origin /img/<key>. */
+  MEDIA_BASE_URL?: string;
   /** Cloudflare Turnstile server secret. If unset → DEV BYPASS (see below). */
   TURNSTILE_SECRET_KEY?: string;
-  /** Password for /admin and the CSV export (HTTP Basic Auth). */
+  /** Turnstile public site key, injected into rendered forms. */
+  PUBLIC_TURNSTILE_SITE_KEY?: string;
+  /** Password for the dashboard, admin APIs and CSV export (HTTP Basic Auth). */
   ADMIN_PASSWORD?: string;
-  /** Active site id; used to scope the admin view / export. Optional. */
-  SITE_ID?: string;
+}
+
+/** JSON response helper. */
+export function json(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
 }
 
 /**

@@ -390,3 +390,56 @@ export function themeCss(theme: SiteTheme): string {
   const f = theme.fonts;
   return `:root{--site-bg:${c.bg};--site-surface:${c.surface};--site-ink:${c.ink};--site-muted:${c.muted};--site-primary:${c.primary};--site-accent:${c.accent};--site-line:${c.line};--site-font-heading:${f.heading};--site-font-body:${f.body};}`;
 }
+
+/** Client-side enhancement scripts shared by the published site. */
+const SITE_SCRIPTS = `
+<script>
+document.querySelectorAll('input[data-attending]').forEach(function(el){
+  el.addEventListener('change',function(e){
+    var declined=e.target.value==='no';
+    document.querySelectorAll('[data-guest-fields]').forEach(function(g){g.style.display=declined?'none':'';});
+  });
+});
+var fab=document.getElementById('pl-fab'),rsvp=document.getElementById('rsvp');
+if(fab&&rsvp&&'IntersectionObserver' in window){
+  new IntersectionObserver(function(es){es.forEach(function(en){fab.classList.toggle('is-hidden',en.isIntersecting);});}).observe(rsvp);
+}
+</script>`;
+
+export interface DocumentOptions {
+  turnstileSiteKey?: string;
+  /** Stylesheet href — defaults to the stable /site.css the build produces. */
+  cssHref?: string;
+}
+
+/**
+ * Render a COMPLETE HTML document for a site (used by the rendering Function to
+ * serve a client site from the database). Mirrors the old BaseLayout shell.
+ */
+export function renderDocument(content: SiteContent, theme: SiteTheme, opts: DocumentOptions = {}): string {
+  const css = opts.cssHref ?? "/site.css";
+  const ctx: RenderCtx = { labels: resolveLabels(content), turnstileSiteKey: opts.turnstileSiteKey };
+  const turnstile = opts.turnstileSiteKey
+    ? `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async></script>`
+    : "";
+  const font = theme.fonts.importUrl ? `<link rel="stylesheet" href="${esc(theme.fonts.importUrl)}">` : "";
+  const desc = content.meta.description ? `<meta name="description" content="${esc(content.meta.description)}">` : "";
+  return `<!doctype html>
+<html lang="${esc(content.language)}" dir="${esc(content.direction)}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(content.meta.title)}</title>
+${desc}
+<link rel="icon" href="${esc(content.meta.favicon ?? "/favicon.svg")}">
+<link rel="stylesheet" href="${css}">
+${font}
+<style>${themeCss(theme)}</style>
+${turnstile}
+</head>
+<body>
+${renderApp(content, ctx)}
+${SITE_SCRIPTS}
+</body>
+</html>`;
+}

@@ -1,22 +1,20 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import tailwindcss from '@tailwindcss/vite';
 
-// Paperly RSVP engine.
+// Paperly — hosted control panel.
 //
-// The site is built as STATIC HTML (output: 'static'). All dynamic behaviour
-// (RSVP form, contact form, admin, CSV export) is handled by Cloudflare Pages
-// Functions living in the top-level `functions/` directory — Cloudflare Pages
-// picks those up automatically, so Astro does not need an SSR adapter here.
+// Astro builds the static "operator" pages (the /admin dashboard and the
+// visual editor). All DYNAMIC behaviour lives in Cloudflare Pages Functions
+// (functions/): rendering each client site by domain/slug from the database,
+// the admin APIs, the RSVP/contact forms, and HD image serving from R2.
 //
-// The "active" client site is chosen with the SITE_ID environment variable at
-// build time (defaults to "demo"). See src/lib/site.ts.
+// Tailwind is compiled once to a STABLE stylesheet at /site.css (via the
+// Tailwind CLI in the build script) so both the Astro pages AND the
+// Function-rendered client sites can link the same CSS.
 export default defineConfig({
   output: 'static',
-  // Set this to the production domain you connect in Cloudflare Pages so that
-  // canonical URLs / sitemaps are correct. Safe to leave as-is for previews.
   site: process.env.SITE_URL || 'https://example.com',
-  vite: {
-    plugins: [tailwindcss()],
-  },
+  // Emit /admin.html, /admin/edit.html, /thank-you.html so those routes serve
+  // directly (no trailing-slash redirects) — keeps the editor's ?slug= links clean.
+  build: { format: 'file' },
 });
