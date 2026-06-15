@@ -154,6 +154,15 @@ export interface RsvpLabels {
   submit?: string;
 }
 
+/** One RSVP "event". A site can have several (e.g. wedding + henna), each
+ *  collecting its own responses (tracked by id in the database / CSV export). */
+export interface RsvpEvent {
+  /** Stable id stored as block_id, e.g. "wedding", "henna". */
+  id: string;
+  /** Heading shown above this event's form, e.g. "Wedding" / "חתונה". */
+  label: string;
+}
+
 export interface RsvpSection extends Toggleable {
   eyebrow?: string;
   title?: string;
@@ -162,6 +171,12 @@ export interface RsvpSection extends Toggleable {
   deadlineNote?: string;
   /** Per-site overrides for field labels. */
   labels?: RsvpLabels;
+  /**
+   * Optional multiple RSVP blocks. When present, one form is rendered per
+   * event so guests can RSVP separately to each (wedding, henna, …). When
+   * empty/omitted, a single combined RSVP form is shown.
+   */
+  events?: RsvpEvent[];
 }
 
 export interface ContactLabels {

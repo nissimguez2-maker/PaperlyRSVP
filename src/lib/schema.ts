@@ -109,6 +109,15 @@ export const SECTION_SCHEMAS: SectionSchema[] = [
       { kind: "text", key: "title", label: "Title" },
       { kind: "textarea", key: "body", label: "Intro" },
       { kind: "text", key: "deadlineNote", label: "Deadline note" },
+      // Leave empty for a single RSVP form. Add events (e.g. Wedding, Henna) to
+      // show one form each — responses are tracked separately per event.
+      {
+        kind: "list", key: "events", label: "Separate RSVP blocks (optional)", itemLabel: "Event",
+        item: [
+          { kind: "text", key: "id", label: "Id (e.g. wedding, henna)" },
+          { kind: "text", key: "label", label: "Heading (e.g. Wedding)" },
+        ],
+      },
     ],
   },
   {

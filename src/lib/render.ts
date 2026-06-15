@@ -224,24 +224,23 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
   const p = palette("rsvp", data.design);
   const star = `<span class="text-accent" title="${esc(L.required)}">*</span>`;
   const ts = ctx.turnstileSiteKey && !ctx.editor ? `<div class="cf-turnstile" data-sitekey="${esc(ctx.turnstileSiteKey)}"></div>` : "";
-  return `${open("rsvp", data.design)}
-  <div class="${containerClass("rsvp", data.design)}">
-    <div class="mb-9">
-      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
-      ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("rsvp", data.design)}">${esc(data.title)}</h2>` : ""}
-      ${data.body ? `<p class="mx-auto mt-4 max-w-xl ${p.body}">${esc(data.body)}</p>` : ""}
-      ${data.deadlineNote ? `<p class="mt-4 text-sm uppercase tracking-[0.2em] text-accent">${esc(data.deadlineNote)}</p>` : ""}
-    </div>
+
+  // One form. `idp` keeps field ids unique when several forms are on the page;
+  // `block` adds the hidden block_id/event_label so each event's responses are
+  // tracked separately in D1 + the CSV export.
+  const form = (idp: string, block?: { id: string; label: string }) => `
     <form ${formAttrs("/api/rsvp", ctx.editor)} class="space-y-5 rounded-2xl border border-line bg-surface p-5 text-start shadow-sm sm:p-8">
       <input type="hidden" name="site_id" value="${esc(content.siteId)}">
       <input type="hidden" name="language" value="${esc(content.language)}">
+      ${block ? `<input type="hidden" name="block_id" value="${esc(block.id)}"><input type="hidden" name="event_label" value="${esc(block.label)}">` : ""}
+      ${block ? `<p class="font-heading text-2xl ${p.heading}">${esc(block.label)}</p>` : ""}
       <div>
-        <label class="field-label" for="rsvp-name">${esc(L.fullName)} ${star}</label>
-        <input class="field-input" id="rsvp-name" name="full_name" type="text" required autocomplete="name">
+        <label class="field-label" for="${idp}-name">${esc(L.fullName)} ${star}</label>
+        <input class="field-input" id="${idp}-name" name="full_name" type="text" required autocomplete="name">
       </div>
       <div class="grid gap-5 sm:grid-cols-2">
-        <div><label class="field-label" for="rsvp-email">${esc(L.email)}</label><input class="field-input" id="rsvp-email" name="email" type="email" autocomplete="email"></div>
-        <div><label class="field-label" for="rsvp-phone">${esc(L.phone)}</label><input class="field-input" id="rsvp-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"></div>
+        <div><label class="field-label" for="${idp}-email">${esc(L.email)}</label><input class="field-input" id="${idp}-email" name="email" type="email" autocomplete="email"></div>
+        <div><label class="field-label" for="${idp}-phone">${esc(L.phone)}</label><input class="field-input" id="${idp}-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"></div>
       </div>
       <fieldset>
         <legend class="field-label">${esc(L.attending)} ${star}</legend>
@@ -255,14 +254,29 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
         </div>
       </fieldset>
       <div data-guest-fields class="space-y-5">
-        <div><label class="field-label" for="rsvp-guests">${esc(L.guests)}</label><input class="field-input" id="rsvp-guests" name="guests" type="number" min="0" inputmode="numeric" value="1"></div>
-        <div><label class="field-label" for="rsvp-guest-names">${esc(L.guestNames)}</label><textarea class="field-input" id="rsvp-guest-names" name="guest_names" rows="2" placeholder="${esc(L.guestNamesHint)}"></textarea></div>
-        <div><label class="field-label" for="rsvp-dietary">${esc(L.dietary)}</label><textarea class="field-input" id="rsvp-dietary" name="dietary" rows="2" placeholder="${esc(L.dietaryHint)}"></textarea></div>
+        <div><label class="field-label" for="${idp}-guests">${esc(L.guests)}</label><input class="field-input" id="${idp}-guests" name="guests" type="number" min="0" inputmode="numeric" value="1"></div>
+        <div><label class="field-label" for="${idp}-guest-names">${esc(L.guestNames)}</label><textarea class="field-input" id="${idp}-guest-names" name="guest_names" rows="2" placeholder="${esc(L.guestNamesHint)}"></textarea></div>
+        <div><label class="field-label" for="${idp}-dietary">${esc(L.dietary)}</label><textarea class="field-input" id="${idp}-dietary" name="dietary" rows="2" placeholder="${esc(L.dietaryHint)}"></textarea></div>
       </div>
-      <div><label class="field-label" for="rsvp-message">${esc(L.message)}</label><textarea class="field-input" id="rsvp-message" name="message" rows="3"></textarea></div>
+      <div><label class="field-label" for="${idp}-message">${esc(L.message)}</label><textarea class="field-input" id="${idp}-message" name="message" rows="3"></textarea></div>
       ${ts}
       <button type="submit" class="btn-primary w-full">${esc(L.rsvpSubmit)}</button>
-    </form>
+    </form>`;
+
+  const events = data.events?.filter((e) => e && e.id) ?? [];
+  const forms = events.length
+    ? `<div class="space-y-8">${events.map((e, i) => form(`rsvp${i}`, { id: e.id, label: e.label })).join("")}</div>`
+    : form("rsvp");
+
+  return `${open("rsvp", data.design)}
+  <div class="${containerClass("rsvp", data.design)}">
+    <div class="mb-9">
+      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+      ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("rsvp", data.design)}">${esc(data.title)}</h2>` : ""}
+      ${data.body ? `<p class="mx-auto mt-4 max-w-xl ${p.body}">${esc(data.body)}</p>` : ""}
+      ${data.deadlineNote ? `<p class="mt-4 text-sm uppercase tracking-[0.2em] text-accent">${esc(data.deadlineNote)}</p>` : ""}
+    </div>
+    ${forms}
   </div>
 </section>`;
 }
@@ -397,7 +411,8 @@ const SITE_SCRIPTS = `
 document.querySelectorAll('input[data-attending]').forEach(function(el){
   el.addEventListener('change',function(e){
     var declined=e.target.value==='no';
-    document.querySelectorAll('[data-guest-fields]').forEach(function(g){g.style.display=declined?'none':'';});
+    var form=e.target.closest('form')||document;
+    form.querySelectorAll('[data-guest-fields]').forEach(function(g){g.style.display=declined?'none':'';});
   });
 });
 var fab=document.getElementById('pl-fab'),rsvp=document.getElementById('rsvp');

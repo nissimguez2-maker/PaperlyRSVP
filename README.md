@@ -138,7 +138,7 @@ Paused/archived sites show a "coming soon" page instead.
 | 4 | Enter & edit visually + HD images | ✅ Studio + R2 (full-res) |
 | 5 | Very modular renderer + hundreds of fonts | ✅ design tokens + ~200-font picker |
 | 6 | Hex colour codes for elements | ✅ theme-level hex (per-element: next) |
-| 7 | Multiple RSVP blocks (e.g. wedding + henna) | ⏳ next phase (blocks model) |
+| 7 | Multiple RSVP blocks (e.g. wedding + henna) | ✅ add events in the RSVP section — one form each, tracked separately |
 | 8 | Manage sites (pause / take down / publish) | ✅ one-click status |
 
 ---
