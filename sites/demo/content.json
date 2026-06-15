@@ -1,0 +1,119 @@
+{
+  "siteId": "demo",
+  "language": "en",
+  "direction": "ltr",
+  "eventType": "wedding",
+  "meta": {
+    "title": "Sarah & David",
+    "description": "Together with our families, we invite you to celebrate our wedding. Find all the details and RSVP here."
+  },
+  "nav": [
+    { "label": "Details", "href": "#details" },
+    { "label": "Schedule", "href": "#schedule" },
+    { "label": "Location", "href": "#location" },
+    { "label": "Gallery", "href": "#gallery" },
+    { "label": "RSVP", "href": "#rsvp" },
+    { "label": "FAQ", "href": "#faq" }
+  ],
+  "sections": {
+    "hero": {
+      "enabled": true,
+      "eyebrow": "Together with our families",
+      "title": "Sarah & David",
+      "subtitle": "are getting married",
+      "date": "Sunday · 14 June 2026",
+      "location": "Jerusalem, Israel",
+      "image": "/visuals/hero.svg",
+      "overlay": 0.45,
+      "cta": { "label": "RSVP", "href": "#rsvp" }
+    },
+    "eventDetails": {
+      "enabled": true,
+      "eyebrow": "The celebration",
+      "title": "We can't wait to celebrate with you",
+      "body": "After years of love and laughter, we are overjoyed to invite you to share in our simcha. Join us for a chuppah under the stars, followed by dinner, dancing and pure joy late into the night.",
+      "image": "/visuals/invitation.svg",
+      "items": [
+        { "label": "Date", "value": "14 June 2026 · כ\"ח סיון תשפ\"ו" },
+        { "label": "Reception", "value": "6:00 PM" },
+        { "label": "Chuppah", "value": "7:00 PM" },
+        { "label": "Dress code", "value": "Formal / Black tie optional" }
+      ]
+    },
+    "schedule": {
+      "enabled": true,
+      "eyebrow": "Order of the evening",
+      "title": "Schedule",
+      "body": "Here's how the evening will unfold.",
+      "items": [
+        { "time": "6:00 PM", "title": "Kabbalat Panim", "description": "Reception, drinks and light bites as guests arrive." },
+        { "time": "7:00 PM", "title": "Chuppah", "description": "The ceremony begins. Please be seated by 6:45 PM." },
+        { "time": "8:00 PM", "title": "Dinner", "description": "Festive seudah and heartfelt toasts." },
+        { "time": "9:30 PM", "title": "Dancing", "description": "Celebrate with us late into the night." }
+      ]
+    },
+    "location": {
+      "enabled": true,
+      "eyebrow": "Getting there",
+      "title": "Location",
+      "venue": "The Garden Pavilion",
+      "address": "123 Blossom Lane\nJerusalem",
+      "body": "Valet parking is available at the main entrance.",
+      "mapUrl": "https://www.google.com/maps",
+      "mapEmbedUrl": ""
+    },
+    "gallery": {
+      "enabled": true,
+      "eyebrow": "Our story in pictures",
+      "title": "Gallery",
+      "body": "A few of our favourite moments together.",
+      "images": [
+        { "src": "/visuals/gallery/1.svg", "alt": "Engagement photo" },
+        { "src": "/visuals/gallery/2.svg", "alt": "Walking together" },
+        { "src": "/visuals/gallery/3.svg", "alt": "Celebrating" }
+      ]
+    },
+    "rsvp": {
+      "enabled": true,
+      "eyebrow": "Be our guest",
+      "title": "RSVP",
+      "body": "We would be honoured to have you join us. Kindly let us know below.",
+      "deadlineNote": "Please respond by 1 May 2026",
+      "labels": {}
+    },
+    "contact": {
+      "enabled": true,
+      "eyebrow": "Questions?",
+      "title": "Contact us",
+      "body": "Have a question about the day? Send us a note and we'll reply soon.",
+      "labels": {}
+    },
+    "faq": {
+      "enabled": true,
+      "eyebrow": "Good to know",
+      "title": "Frequently asked questions",
+      "items": [
+        {
+          "question": "What time should I arrive?",
+          "answer": "Please arrive by 6:00 PM so we can begin the chuppah promptly at 7:00 PM."
+        },
+        {
+          "question": "Is the meal kosher?",
+          "answer": "Yes. The entire event is glatt kosher. Please note any additional dietary needs in your RSVP."
+        },
+        {
+          "question": "Can I bring a guest?",
+          "answer": "Your invitation indicates the number of seats reserved for you. Please list everyone in your party when you RSVP."
+        },
+        {
+          "question": "Where should I park?",
+          "answer": "Complimentary valet parking is available at the venue's main entrance."
+        }
+      ]
+    }
+  },
+  "footer": {
+    "message": "We can't wait to celebrate with you",
+    "credit": "Invitation by Paperly"
+  }
+}

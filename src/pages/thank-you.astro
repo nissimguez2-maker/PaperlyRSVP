@@ -1,0 +1,52 @@
+---
+/**
+ * Thank-you page. The Functions redirect here after a successful submission:
+ *   /thank-you?type=rsvp     (after RSVP)
+ *   /thank-you?type=contact  (after contact message)
+ * Text is in the site's language. A tiny inline script swaps the wording based
+ * on the ?type= param without needing a separate page per form.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { content } from "../lib/site";
+import { getDictionary } from "../lib/i18n";
+
+const dict = getDictionary(content.language);
+---
+
+<BaseLayout title={`${dict.thankYouRsvpTitle} · ${content.meta.title}`}>
+  <main class="flex min-h-screen items-center justify-center bg-bg px-6 py-24 text-center">
+    <div class="reveal max-w-lg">
+      <p class="eyebrow mb-4">{content.meta.title}</p>
+      <h1
+        id="ty-title"
+        class="section-title"
+        data-rsvp={dict.thankYouRsvpTitle}
+        data-contact={dict.thankYouContactTitle}
+      >
+        {dict.thankYouRsvpTitle}
+      </h1>
+      <p
+        id="ty-body"
+        class="mt-5 text-lg text-muted"
+        data-rsvp={dict.thankYouRsvpBody}
+        data-contact={dict.thankYouContactBody}
+      >
+        {dict.thankYouRsvpBody}
+      </p>
+      <div class="mt-10">
+        <a href="/" class="btn-outline">{dict.backHome}</a>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
+
+<script is:inline>
+  // Swap copy for contact submissions. Defaults to the RSVP wording.
+  const type = new URLSearchParams(location.search).get("type");
+  if (type === "contact") {
+    const title = document.getElementById("ty-title");
+    const body = document.getElementById("ty-body");
+    if (title) title.textContent = title.dataset.contact;
+    if (body) body.textContent = body.dataset.contact;
+  }
+</script>

@@ -1,0 +1,87 @@
+---
+/**
+ * The single-page invitation. Sections render top-to-bottom, each one only if
+ * it is present and not disabled (`enabled: false`) in content.json. This is
+ * the file that decides the order of the page — reorder the blocks below to
+ * reorder the site.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Nav from "../components/Nav.astro";
+import Hero from "../components/Hero.astro";
+import EventDetails from "../components/EventDetails.astro";
+import Schedule from "../components/Schedule.astro";
+import Location from "../components/Location.astro";
+import Gallery from "../components/Gallery.astro";
+import RSVPForm from "../components/RSVPForm.astro";
+import ContactForm from "../components/ContactForm.astro";
+import FAQ from "../components/FAQ.astro";
+import Footer from "../components/Footer.astro";
+
+import { content, isEnabled, SITE_ID } from "../lib/site";
+import { getDictionary, withOverrides } from "../lib/i18n";
+
+const s = content.sections;
+const dict = getDictionary(content.language);
+
+// Resolve form labels: site language defaults + per-site overrides.
+const r = s.rsvp?.labels ?? {};
+const rsvpLabels = withOverrides(dict, {
+  fullName: r.fullName,
+  email: r.email,
+  phone: r.phone,
+  attending: r.attending,
+  attendingYes: r.attendingYes,
+  attendingNo: r.attendingNo,
+  guests: r.guests,
+  guestNames: r.guestNames,
+  dietary: r.dietary,
+  message: r.message,
+  rsvpSubmit: r.submit,
+});
+
+const ct = s.contact?.labels ?? {};
+const contactLabels = withOverrides(dict, {
+  contactName: ct.name,
+  contactEmail: ct.email,
+  contactMessage: ct.message,
+  contactSubmit: ct.submit,
+});
+
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+const brand = content.meta.title;
+---
+
+<BaseLayout>
+  <Nav brand={brand} items={content.nav} />
+  <main>
+    {isEnabled(s.hero) && <Hero data={s.hero!} />}
+    {isEnabled(s.eventDetails) && <EventDetails id="details" data={s.eventDetails!} />}
+    {isEnabled(s.schedule) && <Schedule id="schedule" data={s.schedule!} />}
+    {isEnabled(s.location) && (
+      <Location id="location" data={s.location!} directionsLabel={dict.directions} />
+    )}
+    {isEnabled(s.gallery) && <Gallery id="gallery" data={s.gallery!} />}
+    {isEnabled(s.rsvp) && (
+      <RSVPForm
+        id="rsvp"
+        data={s.rsvp!}
+        siteId={SITE_ID}
+        language={content.language}
+        labels={rsvpLabels}
+        turnstileSiteKey={turnstileSiteKey}
+      />
+    )}
+    {isEnabled(s.contact) && (
+      <ContactForm
+        id="contact"
+        data={s.contact!}
+        siteId={SITE_ID}
+        language={content.language}
+        labels={contactLabels}
+        turnstileSiteKey={turnstileSiteKey}
+      />
+    )}
+    {isEnabled(s.faq) && <FAQ id="faq" data={s.faq!} />}
+  </main>
+  <Footer data={content.footer} />
+</BaseLayout>

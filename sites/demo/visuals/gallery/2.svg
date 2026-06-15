@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="760" viewBox="0 0 800 760" role="img" aria-label="Gallery placeholder 2">
+  <rect width="800" height="760" fill="#dfe4dd"/>
+  <rect x="0" y="0" width="800" height="760" fill="#1f2a24" opacity="0.08"/>
+  <text x="400" y="400" text-anchor="middle" font-family="Georgia, serif" font-size="120" fill="#1f2a24" opacity="0.5">2</text>
+  <text x="400" y="490" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#7c736a" letter-spacing="4">gallery photo</text>
+</svg>

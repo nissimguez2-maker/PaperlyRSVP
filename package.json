@@ -1,0 +1,31 @@
+{
+  "name": "paperly-rsvp",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Reusable RSVP / event website engine for Paperly. One repo, many client sites driven by JSON + visuals.",
+  "scripts": {
+    "sync": "node scripts/sync-visuals.mjs",
+    "dev": "npm run sync && astro dev",
+    "start": "npm run dev",
+    "build": "npm run sync && astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "astro check",
+    "create-site": "node scripts/create-site.ts",
+    "db:migrate:local": "wrangler d1 migrations apply paperly-rsvp --local",
+    "db:migrate": "wrangler d1 migrations apply paperly-rsvp --remote",
+    "pages:dev": "npm run build && wrangler pages dev dist"
+  },
+  "dependencies": {
+    "astro": "^5.6.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "@types/node": "^22.10.0",
+    "@tailwindcss/vite": "^4.1.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000" role="img" aria-label="Invitation placeholder">
+  <rect width="800" height="1000" fill="#ffffff"/>
+  <rect x="40" y="40" width="720" height="920" fill="none" stroke="#b08d57" stroke-width="2"/>
+  <rect x="58" y="58" width="684" height="884" fill="none" stroke="#e8e1d7" stroke-width="1"/>
+  <text x="400" y="430" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#7c736a" letter-spacing="6">TOGETHER WITH OUR FAMILIES</text>
+  <text x="400" y="520" text-anchor="middle" font-family="Georgia, serif" font-size="68" fill="#1f2a24">Sarah &amp; David</text>
+  <text x="400" y="600" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#b08d57" letter-spacing="8">14 JUNE 2026</text>
+  <text x="400" y="900" text-anchor="middle" font-family="Georgia, serif" font-size="20" fill="#cbb894" letter-spacing="4">invitation.png — replace in visuals/</text>
+</svg>

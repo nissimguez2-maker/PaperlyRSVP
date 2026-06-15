@@ -1,0 +1,22 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# generated: active site visuals are copied here by scripts/sync-visuals.mjs
+public/visuals/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+.dev.vars
+
+# cloudflare / wrangler
+.wrangler/
+
+# os / editor
+.DS_Store
+*.log

@@ -1,0 +1,61 @@
+---
+/**
+ * Hero — the emotional first impression. A full-height background photo with
+ * a soft darkening overlay and centered names/date. If no image is provided it
+ * falls back to a tasteful theme-coloured gradient.
+ *
+ * Edit copy under `sections.hero` in content.json. The background image goes in
+ * sites/<id>/visuals/ and is referenced as "/visuals/hero.jpg".
+ */
+import type { HeroSection } from "../lib/types";
+
+interface Props {
+  data: HeroSection;
+}
+const { data } = Astro.props;
+const overlay = data.overlay ?? 0.4;
+---
+
+<section id="top" class="relative flex min-h-[88vh] items-center justify-center overflow-hidden">
+  {data.image ? (
+    <img
+      src={data.image}
+      alt=""
+      class="absolute inset-0 h-full w-full object-cover"
+      fetchpriority="high"
+    />
+  ) : (
+    <div class="absolute inset-0 bg-gradient-to-b from-primary to-accent/70"></div>
+  )}
+
+  <!-- Darkening overlay keeps text readable over any photo. -->
+  <div class="absolute inset-0 bg-black" style={`opacity:${overlay}`}></div>
+
+  <div class="reveal container-prose relative z-10 text-center text-white">
+    {data.eyebrow && (
+      <p class="mb-5 text-xs uppercase tracking-[0.35em] text-white/80">{data.eyebrow}</p>
+    )}
+
+    <h1 class="font-heading text-5xl leading-tight sm:text-7xl">{data.title}</h1>
+
+    {data.subtitle && (
+      <p class="mt-4 font-heading text-2xl text-white/90 sm:text-3xl">{data.subtitle}</p>
+    )}
+
+    {(data.date || data.location) && (
+      <div class="mt-8 flex flex-col items-center gap-1 text-sm uppercase tracking-[0.25em] text-white/85">
+        {data.date && <span>{data.date}</span>}
+        {data.date && data.location && <span class="h-px w-10 bg-white/40"></span>}
+        {data.location && <span>{data.location}</span>}
+      </div>
+    )}
+
+    {data.cta && (
+      <div class="mt-10">
+        <a href={data.cta.href} class="btn border border-white/70 text-white hover:bg-white hover:text-primary">
+          {data.cta.label}
+        </a>
+      </div>
+    )}
+  </div>
+</section>

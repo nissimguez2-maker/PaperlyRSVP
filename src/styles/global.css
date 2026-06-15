@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/*
+  THEME SYSTEM
+  ------------
+  Every client site has its own look. Instead of editing CSS per client, the
+  colours and fonts are driven by CSS variables that are set, per site, from
+  sites/<id>/theme.json (injected in BaseLayout.astro as `--site-*` variables).
+
+  Here we map those `--site-*` variables onto Tailwind's theme using
+  `@theme inline`. Because of `inline`, the generated utilities (bg-primary,
+  text-ink, font-heading, …) resolve to the live CSS variable, so changing
+  theme.json instantly re-skins the whole site — no rebuild of CSS rules.
+*/
+@theme inline {
+  --color-bg: var(--site-bg);
+  --color-surface: var(--site-surface);
+  --color-ink: var(--site-ink);
+  --color-muted: var(--site-muted);
+  --color-primary: var(--site-primary);
+  --color-accent: var(--site-accent);
+  --color-line: var(--site-line);
+
+  --font-heading: var(--site-font-heading);
+  --font-body: var(--site-font-body);
+}
+
+/* Sensible defaults so the site always renders even before theme.json loads. */
+:root {
+  --site-bg: #faf8f5;
+  --site-surface: #ffffff;
+  --site-ink: #2b2b2b;
+  --site-muted: #7c736a;
+  --site-primary: #1f2a24;
+  --site-accent: #b08d57;
+  --site-line: #e8e1d7;
+
+  --site-font-heading: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --site-font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* A small set of shared, reusable building blocks. Keep these generic so they
+   work for any client; per-site personality comes from the theme variables. */
+@layer components {
+  .container-prose {
+    @apply mx-auto w-full max-w-5xl px-6 sm:px-8;
+  }
+
+  .eyebrow {
+    @apply text-xs uppercase tracking-[0.25em] text-accent;
+  }
+
+  .section-title {
+    @apply font-heading text-4xl sm:text-5xl text-primary;
+  }
+
+  /* Shared button shape. `.btn` can be used on its own (with extra utilities)
+     or via the .btn-primary / .btn-outline variants. Note: in Tailwind v4
+     @apply only accepts real utilities, so the variants repeat the base shape
+     via this grouped selector rather than @apply-ing `.btn`. */
+  .btn,
+  .btn-primary,
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-8 py-3
+           text-sm uppercase tracking-[0.18em] transition-colors duration-200;
+  }
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-accent;
+  }
+  .btn-outline {
+    @apply border border-accent text-accent hover:bg-accent hover:text-white;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+  .field-input {
+    @apply w-full rounded-lg border border-line bg-surface px-4 py-3 text-ink
+           outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20;
+  }
+}
+
+/* Fade-in-on-load helper used by a few sections. Respects reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: reveal 0.8s ease forwards;
+  }
+  @keyframes reveal {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
