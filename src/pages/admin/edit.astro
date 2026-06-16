@@ -20,16 +20,16 @@
       html, body { height: 100%; }
       body { background: #ececed; overflow: hidden; }
 
-      /* Device stage */
-      #pl-stage { display: grid; place-items: center; }
-      #pl-frame { height: 100%; display: flex; align-items: center; justify-content: center; }
+      /* Device stage: #pl-frame fills the stage; the iframe is centered in it. */
+      #pl-frame { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
       #pl-frame.pl-phone #pl-frame-iframe {
-        width: 402px; max-width: 100%; height: calc(100% - 32px);
-        border: 10px solid #111; border-radius: 44px; background: #fff;
-        box-shadow: 0 30px 70px rgba(0,0,0,.28);
+        width: 390px; max-width: 100%; height: 100%; max-height: 760px;
+        border: 12px solid #111; border-radius: 46px; background: #fff;
+        box-shadow: 0 24px 60px rgba(0,0,0,.28);
       }
       #pl-frame.pl-desktop #pl-frame-iframe {
-        width: 100%; height: 100%; border: 1px solid #d9d9da; border-radius: 12px; background: #fff;
+        width: 100%; height: 100%;
+        border: 1px solid #d9d9da; border-radius: 12px; background: #fff;
         box-shadow: 0 18px 50px rgba(0,0,0,.14);
       }
       #pl-frame-iframe { border: 0; }

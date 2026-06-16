@@ -91,6 +91,10 @@ export function sectionStyle(key: SectionKey, d?: SectionDesign): string {
   if (num(r.overlap) && r.overlap > 0) parts.push(`margin-top:-${Math.min(r.overlap, 6)}rem;position:relative`);
   if (r.accentOverride) parts.push(`--site-accent:${r.accentOverride}`);
   if (r.inkOverride) parts.push(`--site-ink:${r.inkOverride}`);
+  if (r.headingColor) parts.push(`--site-primary:${r.headingColor}`); // headings use text-primary
+  if (r.bgHex) parts.push(`background-color:${r.bgHex}`); // wins over the bg token class
+  if (r.headingFont) parts.push(`--site-font-heading:${r.headingFont}`);
+  if (r.bodyFont) parts.push(`font-family:${r.bodyFont}`); // body text in this section
   return parts.join(";");
 }
 

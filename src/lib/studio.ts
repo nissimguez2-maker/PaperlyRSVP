@@ -13,7 +13,7 @@
  * No UI framework — plain DOM + the shared renderer.
  */
 import type { SiteContent, SiteTheme, SectionKey } from "./types";
-import { renderApp, resolveLabels, themeCss, esc } from "./render";
+import { renderApp, resolveLabels, themeCss, fontsHref, esc } from "./render";
 import { SCHEMA_BY_KEY, SECTION_SCHEMAS, type Field } from "./schema";
 import { DEFAULT_DESIGN } from "./design";
 import { FONTS, cssStack, googleFontsUrl } from "./fonts";
@@ -118,7 +118,7 @@ function renderPreviewNow(): void {
   const iframe = document.getElementById("pl-frame-iframe") as HTMLIFrameElement | null;
   if (!iframe) return;
   const body = renderApp(state.content, { labels: resolveLabels(state.content), editor: true });
-  const importUrl = state.theme.fonts.importUrl || "";
+  const importUrl = fontsHref(state.content, state.theme);
   const doc = iframe.contentDocument;
 
   if (previewReady && doc?.body) {
@@ -215,7 +215,9 @@ function fieldHtml(field: Field, base: string, value: any): string {
     case "link": {
       const v = value ?? {};
       return `<div class="mb-4 rounded-md border border-neutral-200 p-3"><p class="mb-2 text-xs font-medium text-neutral-500">${esc(field.label)}</p>
-        ${I.group("Text", I.input(`${path}.label`, v.label ?? ""))}${I.group("Link", I.input(`${path}.href`, v.href ?? ""))}</div>`;
+        ${I.group("Button text", I.input(`${path}.label`, v.label ?? ""))}
+        ${I.group("Goes to", linkTargetSelect(`${path}.href`, v.href ?? ""))}
+        ${I.group("…or a custom link", I.input(`${path}.href`, v.href ?? ""))}</div>`;
     }
     case "list": {
       const arr: any[] = Array.isArray(value) ? value : [];
@@ -239,9 +241,22 @@ function selectEl(path: string, value: string, options: [string, string][]): str
   const opts = options.map(([v, l]) => `<option value="${v}"${v === value ? " selected" : ""}>${esc(l)}</option>`).join("");
   return `<select data-path="${path}" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">${opts}</select>`;
 }
+
+/** A dropdown that points a link at a section (no need to type the #anchor). */
+function linkTargetSelect(path: string, value: string): string {
+  return selectEl(path, value, [
+    ["", "Custom / external (type below)"],
+    ["#top", "Top / hero"], ["#details", "Details"], ["#schedule", "Schedule"],
+    ["#location", "Location"], ["#gallery", "Gallery"], ["#rsvp", "RSVP"],
+    ["#contact", "Contact"], ["#faq", "FAQ"],
+  ]);
+}
 function range(path: string, value: number, min: number, max: number, step: number): string {
-  return `<div class="flex items-center gap-2"><input type="range" data-path="${path}" min="${min}" max="${max}" step="${step}" value="${value}" class="w-full">
-    <span data-val-for="${path}" class="w-10 text-end text-xs text-neutral-500">${value}</span></div>`;
+  // Slider AND a manual number box (both bound to the same path, kept in sync).
+  return `<div class="flex items-center gap-2">
+    <input type="range" data-path="${path}" min="${min}" max="${max}" step="${step}" value="${value}" class="w-full">
+    <input type="number" data-path="${path}" min="${min}" max="${max}" step="${step}" value="${value}" class="w-16 shrink-0 rounded-md border border-neutral-300 px-2 py-1 text-xs">
+  </div>`;
 }
 
 /** A range whose slider shows `fallback` when the value is unset (optional field). */
@@ -288,13 +303,17 @@ function designHtml(key: SectionKey): string {
     ${key === "hero" ? I.group("Hero text position", selectEl(`${base}.heroAnchor`, d.heroAnchor ?? "center", [["top", "Top"], ["center", "Center"], ["bottom", "Bottom"]])) : ""}`;
 
   const type = `
+    ${I.group("Heading font (this section)", fontPickerButton("section:headingFont", d.headingFont || state.theme.fonts.heading))}
+    ${I.group("Body font (this section)", fontPickerButton("section:bodyFont", d.bodyFont || state.theme.fonts.body))}
     ${I.group("Title size", range(`${base}.titleScale`, d.titleScale, 0.7, 1.6, 0.05))}
     ${I.group("Title letter-spacing", optRange(`${base}.headingTracking`, d.headingTracking, -0.02, 0.3, 0.01, 0.01))}
     ${I.group("Title line-height", optRange(`${base}.headingLeading`, d.headingLeading, 0.9, 1.6, 0.05, 1.1))}`;
 
   const color = `
+    ${colorField("Heading colour", `${base}.headingColor`, d.headingColor ?? state.theme.colors.primary)}
     ${colorField("Accent (this section)", `${base}.accentOverride`, d.accentOverride ?? state.theme.colors.accent)}
-    ${colorField("Text (this section)", `${base}.inkOverride`, d.inkOverride ?? state.theme.colors.ink)}`;
+    ${colorField("Text (this section)", `${base}.inkOverride`, d.inkOverride ?? state.theme.colors.ink)}
+    ${nonHero ? colorField("Section background", `${base}.bgHex`, d.bgHex ?? state.theme.colors.bg) : ""}`;
 
   const images = hasImage ? `
     ${I.group("Image corners", optRange(`${base}.imgRadius`, d.imgRadius, 0, 2.5, 0.1, 0.75))}
@@ -375,14 +394,83 @@ function sectionsTab(): string {
 }
 
 function currentFontName(stack: string): string {
+  if (!stack) return "";
   const m = stack.match(/'([^']+)'/);
-  return m ? m[1] : stack.split(",")[0].trim();
+  return m ? m[1] : stack.split(",")[0].replace(/['"]/g, "").trim();
 }
-function fontDatalist(): string {
-  return `<datalist id="pl-fonts">${FONTS.map((f) => `<option value="${esc(f.name)}">`).join("")}</datalist>`;
+
+// --- font picker (custom dropdown: previews each font in its own typeface) ---
+const loadedFonts = new Set<string>();
+/** Ensure a font's stylesheet is loaded in the EDITOR document (for previews). */
+function ensureFontLoaded(name: string): void {
+  if (!name || loadedFonts.has(name)) return;
+  loadedFonts.add(name);
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = googleFontsUrl([name]);
+  document.head.appendChild(link);
 }
-function fontInput(which: "heading" | "body", value: string): string {
-  return `<input list="pl-fonts" data-font="${which}" value="${esc(value)}" placeholder="Search ${FONTS.length}+ fonts…" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">`;
+
+/** A button that shows the current font IN that font and opens the picker. */
+function fontPickerButton(target: string, stack: string): string {
+  const name = currentFontName(stack);
+  ensureFontLoaded(name);
+  const label = name || "Default";
+  return `<button data-fontpick="${target}" data-current="${esc(name)}" class="flex w-full items-center justify-between rounded-md border border-neutral-300 px-3 py-2 text-sm hover:border-neutral-900" style="font-family:${esc(stack || "inherit")}">
+    <span class="truncate">${esc(label)}</span><span class="ms-2 text-neutral-300">▾</span></button>`;
+}
+
+/** Open a searchable font picker; each row previews the font. Calls onPick(name). */
+function openFontPicker(currentName: string, onPick: (name: string) => void): void {
+  const overlay = document.createElement("div");
+  overlay.className = "fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4";
+  overlay.innerHTML = `<div class="flex max-h-[80vh] w-full max-w-md flex-col rounded-2xl bg-white p-4 shadow-xl">
+    <div class="mb-2 flex items-center justify-between"><h3 class="font-semibold">Choose a font</h3>
+      <button data-close class="rounded px-2 py-1 text-sm text-neutral-500 hover:bg-neutral-100">Close</button></div>
+    <input data-search type="text" placeholder="Search ${FONTS.length}+ fonts…" class="mb-3 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">
+    <div data-list class="-mx-1 flex-1 overflow-y-auto"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => { obs.disconnect(); overlay.remove(); };
+  overlay.addEventListener("click", (e) => { if (e.target === overlay || (e.target as HTMLElement).hasAttribute("data-close")) close(); });
+
+  const list = overlay.querySelector("[data-list]") as HTMLElement;
+  const search = overlay.querySelector("[data-search]") as HTMLInputElement;
+  // Lazy-load each row's font only when it scrolls into view.
+  const obs = new IntersectionObserver((es) => es.forEach((en) => {
+    if (en.isIntersecting) ensureFontLoaded((en.target as HTMLElement).dataset.font || "");
+  }), { root: list });
+
+  const draw = (q: string) => {
+    obs.disconnect();
+    const items = FONTS.filter((f) => f.name.toLowerCase().includes(q.toLowerCase()));
+    list.innerHTML = items.map((f) =>
+      `<button data-font="${esc(f.name)}" class="block w-full rounded-md px-3 py-2 text-start text-base hover:bg-neutral-100 ${f.name === currentName ? "bg-neutral-100 font-semibold" : ""}" style="font-family:'${esc(f.name)}', ${f.category === "serif" || f.category === "display" ? "serif" : f.category === "handwriting" ? "cursive" : f.category === "monospace" ? "monospace" : "sans-serif"}">${esc(f.name)}</button>`,
+    ).join("") || `<p class="px-3 py-4 text-sm text-neutral-400">No fonts match.</p>`;
+    list.querySelectorAll<HTMLElement>("[data-font]").forEach((el) => obs.observe(el));
+  };
+  draw("");
+  search.addEventListener("input", () => draw(search.value));
+  list.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-font]");
+    if (!btn) return;
+    onPick(btn.dataset.font!);
+    close();
+  });
+  search.focus();
+}
+
+/** Apply a font pick to whatever target was clicked (theme or per-section). */
+function applyFontPick(target: string, name: string): void {
+  const stack = cssStack(name);
+  if (target === "theme:heading" || target === "theme:body") {
+    applyFont(target === "theme:heading" ? "heading" : "body", name);
+  } else if (target.startsWith("section:") && selected) {
+    const prop = target.slice("section:".length); // headingFont | bodyFont
+    setByPath(state, `content.sections.${selected}.design.${prop}`, stack);
+    markDirty(); refreshPreview();
+  }
+  renderPanel();
 }
 
 function themeTab(): string {
@@ -401,16 +489,15 @@ function themeTab(): string {
     ${colorRow("primary", "Primary (headings, buttons)")}${colorRow("accent", "Accent (gold/details)")}
     ${colorRow("bg", "Page background")}${colorRow("surface", "Cards / panels")}
     ${colorRow("ink", "Body text")}${colorRow("muted", "Muted text")}${colorRow("line", "Lines / borders")}
-    <div class="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Fonts (${FONTS.length}+ available)</div>
-    ${I.group("Heading font", fontInput("heading", currentFontName(state.theme.fonts.heading)))}
-    ${I.group("Body font", fontInput("body", currentFontName(state.theme.fonts.body)))}
+    <div class="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Fonts (${FONTS.length}+, previewed in their own typeface)</div>
+    ${I.group("Heading font", fontPickerButton("theme:heading", state.theme.fonts.heading))}
+    ${I.group("Body font", fontPickerButton("theme:body", state.theme.fonts.body))}
     <div class="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Whole-page background</div>
     <p class="-mt-2 mb-3 text-[11px] text-neutral-400">Sits behind every section. Set sections to "Transparent" (Layout) to let it flow through.</p>
     ${I.group("Background image", `${bgThumb}<input type="file" accept="image/*" data-file="content.background.image" class="block w-full text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white">`)}
     ${I.group("…or a pattern", selectEl("content.background.pattern", bgv.pattern ?? "none", [["none", "None"], ["dots", "Dots"], ["grid", "Grid"]]))}
     ${I.group("Darken background", optRange("content.background.scrim", bgv.scrim, 0, 0.85, 0.05, 0))}
-    ${I.group("Image fit", selectEl("content.background.size", bgv.size ?? "cover", [["cover", "Cover"], ["contain", "Contain"], ["repeat", "Tile"]]))}
-    ${fontDatalist()}`;
+    ${I.group("Image fit", selectEl("content.background.size", bgv.size ?? "cover", [["cover", "Cover"], ["contain", "Contain"], ["repeat", "Tile"]]))}`;
 }
 
 function settingsTab(): string {
@@ -420,7 +507,9 @@ function settingsTab(): string {
       <span class="flex gap-1"><button data-action="list-up" data-path="content.nav.${i}" class="rounded bg-neutral-100 px-2 py-1 text-xs">↑</button>
       <button data-action="list-down" data-path="content.nav.${i}" class="rounded bg-neutral-100 px-2 py-1 text-xs">↓</button>
       <button data-action="list-del" data-path="content.nav.${i}" class="rounded bg-red-50 px-2 py-1 text-xs text-red-600">✕</button></span></div>
-    ${I.group("Text", I.input(`content.nav.${i}.label`, n.label))}${I.group("Link", I.input(`content.nav.${i}.href`, n.href))}</div>`).join("");
+    ${I.group("Text", I.input(`content.nav.${i}.label`, n.label))}
+    ${I.group("Goes to", linkTargetSelect(`content.nav.${i}.href`, n.href))}
+    ${I.group("…or a custom link", I.input(`content.nav.${i}.href`, n.href))}</div>`).join("");
   return `<div class="text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Site</div>
     ${I.group("Site name", I.input("content.meta.title", m.title))}
     ${I.group("Description", I.area("content.meta.description", m.description ?? ""))}
@@ -646,10 +735,10 @@ export async function initStudio(): Promise<void> {
     const path = t.getAttribute?.("data-path");
     if (!path) return;
     const value = (t as HTMLInputElement).value;
-    setByPath(state, path, (t as HTMLInputElement).type === "range" ? parseFloat(value) : value);
+    const numeric = (t as HTMLInputElement).type === "range" || (t as HTMLInputElement).type === "number";
+    setByPath(state, path, numeric ? parseFloat(value) : value);
+    // Keep any other inputs bound to the same path (slider ↔ number, colour ↔ hex) in sync.
     panel.querySelectorAll<HTMLInputElement>(`[data-path="${path}"]`).forEach((i) => { if (i !== t) i.value = value; });
-    const badge = panel.querySelector(`[data-val-for="${path}"]`);
-    if (badge) badge.textContent = value;
     markDirty(); refreshPreview();
   });
   panel.addEventListener("change", async (e) => {
@@ -661,12 +750,22 @@ export async function initStudio(): Promise<void> {
       return;
     }
     if (t.tagName === "SELECT" && t.getAttribute("data-path")) {
-      setByPath(state, t.getAttribute("data-path")!, (t as HTMLSelectElement).value);
-      // Don't rebuild the panel (keeps your scroll position); just refresh the preview.
+      const path = t.getAttribute("data-path")!;
+      const value = (t as HTMLSelectElement).value;
+      setByPath(state, path, value);
+      // Sync any paired text input (e.g. the "custom link" box) without a full rebuild.
+      panel.querySelectorAll<HTMLInputElement>(`input[data-path="${path}"]`).forEach((i) => { i.value = value; });
       markDirty(); renderPreviewNow();
     }
   });
   panel.addEventListener("click", (e) => {
+    const fp = (e.target as HTMLElement).closest<HTMLElement>("[data-fontpick]");
+    if (fp) {
+      e.preventDefault();
+      const target = fp.dataset.fontpick!;
+      openFontPicker(fp.dataset.current || "", (name) => applyFontPick(target, name));
+      return;
+    }
     const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-action],[data-tab]");
     if (!btn) return;
     e.preventDefault();

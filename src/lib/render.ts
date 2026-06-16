@@ -19,6 +19,7 @@ import type {
 } from "./types";
 import type { Dictionary } from "./i18n";
 import { getDictionary, withOverrides } from "./i18n";
+import { googleFontsUrl } from "./fonts";
 import {
   bgClass, sectionStyle, containerClass, containerStyle, gapStyle, titleStyle,
   heroHeadingStyle, heroAnchorClass, imageStyle, imgScrim, buttonClass, dividerHtml,
@@ -485,6 +486,28 @@ ${renderFooter(content.footer)}
 ${fab}`;
 }
 
+/** Extract a font family NAME from a CSS stack like "'Inter', sans-serif". */
+function fontName(stack?: string): string {
+  if (!stack) return "";
+  const m = stack.match(/'([^']+)'|"([^"]+)"/);
+  return (m ? m[1] || m[2] : stack.split(",")[0]).replace(/['"]/g, "").trim();
+}
+
+/**
+ * Google Fonts stylesheet URL covering EVERY font used on the site: the global
+ * heading/body fonts plus any per-section font overrides. So per-place fonts
+ * actually load on both the published site and the editor preview.
+ */
+export function fontsHref(content: SiteContent, theme: SiteTheme): string {
+  const names = [fontName(theme.fonts.heading), fontName(theme.fonts.body)];
+  for (const key of DEFAULT_ORDER) {
+    const d = content.sections[key]?.design;
+    if (d?.headingFont) names.push(fontName(d.headingFont));
+    if (d?.bodyFont) names.push(fontName(d.bodyFont));
+  }
+  return googleFontsUrl(names);
+}
+
 /** Build the per-site theme CSS (the `:root{ --site-* }` block). */
 export function themeCss(theme: SiteTheme): string {
   const c = theme.colors;
@@ -532,7 +555,8 @@ export function renderDocument(content: SiteContent, theme: SiteTheme, opts: Doc
   const turnstile = opts.turnstileSiteKey
     ? `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async></script>`
     : "";
-  const font = theme.fonts.importUrl ? `<link rel="stylesheet" href="${esc(theme.fonts.importUrl)}">` : "";
+  const href = fontsHref(content, theme);
+  const font = href ? `<link rel="stylesheet" href="${esc(href)}">` : "";
   const desc = content.meta.description ? `<meta name="description" content="${esc(content.meta.description)}">` : "";
   return `<!doctype html>
 <html lang="${esc(content.language)}" dir="${esc(content.direction)}">

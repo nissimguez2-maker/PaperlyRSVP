@@ -60,6 +60,14 @@ export interface SectionDesign {
   inkOverride?: string;
   /** Hex override for the accent colour scoped to this section. */
   accentOverride?: string;
+  /** Hex override for the section background (wins over the `bg` token). */
+  bgHex?: string;
+  /** Hex override for headings in this section. */
+  headingColor?: string;
+  /** Font family stack for headings in this section (overrides the theme font). */
+  headingFont?: string;
+  /** Font family stack for body text in this section (overrides the theme font). */
+  bodyFont?: string;
   /** Minimum section height in svh (0–100) — e.g. make a section full-screen. */
   minH?: number;
   /** Image corner radius, rem (0–2.5). */

@@ -35,7 +35,8 @@ export interface SiteSummary {
 
 export async function listSites(env: Env): Promise<SiteSummary[]> {
   const { results } = await env.DB.prepare(
-    `SELECT s.slug, s.title, s.status, s.domain, s.cover, s.created_at, s.updated_at,
+    `SELECT s.slug, s.title, s.status, s.domain, s.created_at, s.updated_at,
+       COALESCE(s.cover, json_extract(s.content,'$.sections.hero.image'), json_extract(s.content,'$.background.image')) AS cover,
        (SELECT COUNT(*) FROM rsvps r WHERE r.site_id = s.slug) AS rsvp_count,
        (SELECT COUNT(*) FROM contact_messages c WHERE c.site_id = s.slug) AS contact_count
      FROM sites s ORDER BY s.updated_at DESC`,
