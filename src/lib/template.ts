@@ -133,13 +133,17 @@ export function starterContent(slug: string, o: TemplateOptions): SiteContent {
 export function starterTheme(): SiteTheme {
   return {
     colors: {
-      bg: "#faf8f5", surface: "#ffffff", ink: "#2b2b2b", muted: "#7c736a",
-      primary: "#1f2a24", accent: "#b08d57", line: "#e8e1d7",
+      // Warm parchment + antique-gold stationery palette (not cold near-white).
+      bg: "#f7f3ec", surface: "#fffdf9", ink: "#2a2520", muted: "#857b6e",
+      primary: "#33403a", accent: "#a8854c", line: "#e6ddcf",
     },
     fonts: {
-      heading: "'Cormorant Garamond', Georgia, serif",
-      body: "'Inter', ui-sans-serif, system-ui, sans-serif",
-      importUrl: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500&display=swap",
+      // Fraunces (an optical, editorial display serif — also the Paperly
+      // wordmark) over Hanken Grotesk (a warm humanist grotesque). A more
+      // distinctive, designer-grade pairing than the ubiquitous Cormorant+Inter.
+      heading: "'Fraunces', Georgia, 'Times New Roman', serif",
+      body: "'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif",
+      importUrl: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600&display=swap",
     },
   };
 }

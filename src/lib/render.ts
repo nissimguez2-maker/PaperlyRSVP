@@ -23,7 +23,7 @@ import { googleFontsUrl } from "./fonts";
 import {
   bgClass, sectionStyle, containerClass, containerStyle, gapStyle, titleStyle,
   heroHeadingStyle, heroAnchorClass, imageStyle, imgScrim, buttonClass, dividerHtml,
-  resolveDesign,
+  resolveDesign, foilRule,
 } from "./design";
 
 export interface RenderCtx {
@@ -92,8 +92,8 @@ function calendarButtons(content: SiteContent, data: EventDetailsSection, bodyCl
   ].filter(Boolean).join("\r\n");
   const icsHref = `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}`;
 
-  return `<div class="mt-8">
-    <p class="mb-2 text-xs uppercase tracking-[0.2em] ${bodyClass}">${esc(labels.add)}</p>
+  return `<div class="mt-10">
+    <p class="mb-3 text-[0.7rem] uppercase tracking-[0.24em] ${bodyClass}">${esc(labels.add)}</p>
     <div class="flex flex-wrap gap-3">
       <a href="${gcal}" target="_blank" rel="noopener" class="btn-outline">${esc(labels.g)}</a>
       <a href="${icsHref}" download="event.ics" class="btn-outline">${esc(labels.a)}</a>
@@ -107,10 +107,25 @@ function palette(key: SectionKey, d?: HeroSection["design"]) {
   const dark = bg === "primary" || bg === "accent";
   return {
     heading: dark ? "text-white" : "text-primary",
-    eyebrow: dark ? "text-white/70" : "text-accent",
-    body: dark ? "text-white/90" : "text-muted",
-    line: dark ? "border-white/30" : "border-line",
+    eyebrow: dark ? "text-white/75" : "text-accent",
+    body: dark ? "text-white/85" : "text-muted",
+    line: dark ? "border-white/25" : "border-line",
+    /** Faint hairline tone for refined rules/dividers within the section. */
+    hair: dark ? "border-white/15" : "border-line/70",
   };
+}
+
+/**
+ * A small, refined "eyebrow" label — wide small-cap tracking with a short gold
+ * tick before it. Stationery detailing for section kickers. RTL-safe: a flex
+ * row whose gap + justify mirror automatically under dir="rtl".
+ */
+function eyebrow(text: string, toneClass: string, centered = true): string {
+  if (!text) return "";
+  const wrap = centered ? "justify-center" : "justify-start";
+  return `<p class="mb-4 flex items-center ${wrap} gap-2.5 text-[0.7rem] font-medium uppercase tracking-[0.32em] ${toneClass}">
+    <span aria-hidden="true" class="inline-block h-px w-6 bg-current opacity-60"></span>${esc(text)}
+  </p>`;
 }
 
 /**
@@ -129,20 +144,20 @@ function renderNav(brand: string, items: NavItem[] | undefined): string {
   const links = items ?? [];
   if (!brand && links.length === 0) return "";
   const desktop = links
-    .map((i) => `<li><a href="${esc(i.href)}" class="text-sm tracking-wide text-muted transition-colors hover:text-accent">${esc(i.label)}</a></li>`)
+    .map((i) => `<li><a href="${esc(i.href)}" class="group relative text-[0.82rem] uppercase tracking-[0.16em] text-muted transition-colors hover:text-accent">${esc(i.label)}<span aria-hidden="true" class="absolute -bottom-1.5 start-0 h-px w-0 bg-accent transition-all duration-300 group-hover:w-full"></span></a></li>`)
     .join("");
   const mobile = links
-    .map((i) => `<li><a href="${esc(i.href)}" class="block rounded-lg px-3 py-3 text-base text-ink hover:bg-bg hover:text-accent">${esc(i.label)}</a></li>`)
+    .map((i) => `<li><a href="${esc(i.href)}" class="block rounded-lg px-3 py-3 text-base tracking-wide text-ink transition-colors hover:bg-bg hover:text-accent">${esc(i.label)}</a></li>`)
     .join("");
   return `
-<header class="sticky top-0 z-40 border-b border-line/60 bg-bg/85 backdrop-blur">
-  <nav class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
-    <a href="#top" class="font-heading text-lg tracking-wide text-primary">${esc(brand)}</a>
+<header class="sticky top-0 z-40 border-b border-line/55 bg-bg/80 backdrop-blur-md">
+  <nav class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+    <a href="#top" class="font-heading text-[1.35rem] leading-none tracking-[0.005em] text-primary">${esc(brand)}</a>
     ${links.length ? `
-    <ul class="hidden items-center gap-7 md:flex">${desktop}</ul>
+    <ul class="hidden items-center gap-9 md:flex">${desktop}</ul>
     <details class="relative md:hidden">
       <summary class="flex h-10 w-10 cursor-pointer list-none items-center justify-center text-2xl leading-none text-primary">☰</summary>
-      <ul class="absolute end-0 mt-2 w-56 rounded-xl border border-line bg-surface p-2 shadow-lg">${mobile}</ul>
+      <ul class="absolute end-0 mt-3 w-56 rounded-xl border border-line bg-surface p-2 shadow-[0_18px_48px_-24px_rgba(40,32,22,0.45)]">${mobile}</ul>
     </details>` : ""}
   </nav>
 </header>`;
@@ -152,15 +167,19 @@ function renderHero(data: HeroSection): string {
   const overlay = data.overlay ?? 0.4;
   const bg = data.image
     ? `<img src="${esc(data.image)}" alt="" class="absolute inset-0 h-full w-full object-cover" fetchpriority="high">`
-    : `<div class="absolute inset-0 bg-gradient-to-b from-primary to-accent/70"></div>`;
+    : `<div class="absolute inset-0 bg-gradient-to-b from-primary via-primary to-accent/60"></div>`;
+  // Date framed by short foil ticks; location set apart in small-caps.
   const meta = (data.date || data.location)
-    ? `<div class="mt-7 flex flex-col items-center gap-1 text-xs uppercase tracking-[0.22em] text-white/85 sm:text-sm">
-        ${data.date ? `<span data-pl-field="date">${esc(data.date)}</span>` : ""}
-        ${data.date && data.location ? `<span class="h-px w-10 bg-white/40"></span>` : ""}
-        ${data.location ? `<span data-pl-field="location">${esc(data.location)}</span>` : ""}
+    ? `<div class="mt-8 flex flex-col items-center gap-3 text-white/90">
+        ${data.date ? `<div class="flex items-center gap-3.5 text-xs uppercase tracking-[0.3em] sm:text-sm">
+          <span aria-hidden="true" class="h-px w-7 bg-white/45"></span>
+          <span data-pl-field="date">${esc(data.date)}</span>
+          <span aria-hidden="true" class="h-px w-7 bg-white/45"></span>
+        </div>` : ""}
+        ${data.location ? `<span data-pl-field="location" class="text-[0.72rem] uppercase tracking-[0.26em] text-white/75 sm:text-xs">${esc(data.location)}</span>` : ""}
       </div>` : "";
   const cta = data.cta
-    ? `<div class="mt-9"><a href="${esc(data.cta.href)}" class="btn border border-white/70 text-white hover:bg-white hover:text-primary">${esc(data.cta.label)}</a></div>`
+    ? `<div class="mt-10"><a href="${esc(data.cta.href)}" class="btn border border-white/65 text-white backdrop-blur-[2px] hover:bg-white hover:text-primary">${esc(data.cta.label)}</a></div>`
     : "";
   const minH = resolveDesign("hero", data.design).minH;
   const minStyle = typeof minH === "number" && minH > 0 ? `min-height:${minH}svh` : "min-height:100svh";
@@ -168,10 +187,12 @@ function renderHero(data: HeroSection): string {
 <section id="top" data-pl-section="hero" data-reveal class="relative flex justify-center overflow-hidden ${heroAnchorClass(data.design)}" style="${minStyle}">
   ${bg}
   <div class="absolute inset-0 bg-black" style="opacity:${overlay}"></div>
+  <!-- soft top + bottom gradient so type sits on graded depth, not a flat wash -->
+  <div aria-hidden="true" class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45"></div>
   <div class="relative z-10 mx-auto w-full max-w-3xl px-6 text-center text-white">
-    ${data.eyebrow ? `<p data-pl-field="eyebrow" class="mb-5 text-[0.7rem] uppercase tracking-[0.3em] text-white/80 sm:text-xs">${esc(data.eyebrow)}</p>` : ""}
-    <h1 data-pl-field="title" class="font-heading leading-[1.05]" style="${heroHeadingStyle(data.design)}">${esc(data.title)}</h1>
-    ${data.subtitle ? `<p data-pl-field="subtitle" class="mt-3 font-heading text-xl text-white/90 sm:text-3xl">${esc(data.subtitle)}</p>` : ""}
+    ${data.eyebrow ? `<p data-pl-field="eyebrow" class="mb-6 text-[0.72rem] uppercase tracking-[0.34em] text-white/85 sm:text-xs">${esc(data.eyebrow)}</p>` : ""}
+    <h1 data-pl-field="title" class="font-heading" style="${heroHeadingStyle(data.design)}">${esc(data.title)}</h1>
+    ${data.subtitle ? `<p data-pl-field="subtitle" class="mx-auto mt-4 max-w-2xl font-heading text-xl text-white/90 sm:text-3xl" style="line-height:1.25;letter-spacing:0.005em">${esc(data.subtitle)}</p>` : ""}
     ${meta}
     ${cta}
   </div>
@@ -180,50 +201,59 @@ function renderHero(data: HeroSection): string {
 
 function renderEventDetails(data: EventDetailsSection, content: SiteContent): string {
   const p = palette("eventDetails", data.design);
+  // Editorial definition list: gold small-cap label over a serif value, each
+  // row separated by a hairline. Reads like an engraved details card.
   const items = (data.items ?? [])
     .map((it) => `
-      <div class="border-t ${p.line} pt-4 text-start">
-        <dt class="text-xs uppercase tracking-[0.2em] text-accent">${esc(it.label)}</dt>
-        <dd class="mt-1 text-lg ${p.heading}">${esc(it.value)}</dd>
+      <div class="border-t ${p.hair} pt-4 text-start">
+        <dt class="text-[0.7rem] font-medium uppercase tracking-[0.24em] text-accent">${esc(it.label)}</dt>
+        <dd class="mt-1.5 font-heading text-xl ${p.heading}" style="line-height:1.2">${esc(it.value)}</dd>
       </div>`)
     .join("");
   const text = `
-    <div>
-      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+    <div class="md:pe-6">
+      ${eyebrow(data.eyebrow ?? "", p.eyebrow, false)}
       ${data.title ? `<h2 class="mb-6 font-heading ${p.heading}" style="${titleStyle("eventDetails", data.design)}">${esc(data.title)}</h2>` : ""}
-      ${data.body ? `<p class="text-lg leading-relaxed ${p.body}">${multiline(data.body)}</p>` : ""}
-      ${items ? `<dl class="mt-9 grid grid-cols-1 gap-6 sm:grid-cols-2" style="${gapStyle("eventDetails", data.design)}">${items}</dl>` : ""}
+      ${data.body ? `<p class="text-lg leading-relaxed ${p.body}" style="max-width:60ch">${multiline(data.body)}</p>` : ""}
+      ${items ? `<dl class="mt-10 grid grid-cols-1 gap-7 sm:grid-cols-2" style="${gapStyle("eventDetails", data.design)}">${items}</dl>` : ""}
       ${calendarButtons(content, data, p.body)}
     </div>`;
+  // The artwork sits in a soft "matted" frame for a printed-stationery feel.
   const image = data.image
-    ? `<div class="order-first md:order-last"><img src="${esc(data.image)}" alt="${esc(data.title ?? "")}" class="mx-auto w-full max-w-sm rounded-2xl border ${p.line} object-cover shadow-sm" style="${imageStyle("eventDetails", data.design)}"></div>`
+    ? `<div class="order-first md:order-last">
+        <div class="mx-auto w-full max-w-sm rounded-2xl border ${p.hair} bg-surface p-2.5" style="box-shadow:0 1px 2px rgba(40,32,22,0.05),0 30px 60px -34px rgba(40,32,22,0.4)">
+          <img src="${esc(data.image)}" alt="${esc(data.title ?? "")}" class="w-full object-cover" style="${imageStyle("eventDetails", data.design) || "border-radius:0.75rem"}">
+        </div>
+      </div>`
     : "";
   return `${open("eventDetails", data.design)}
   <div class="${containerClass("eventDetails", data.design)}" style="${containerStyle("eventDetails", data.design)}">
-    <div class="grid items-center gap-10 md:grid-cols-2">${text}${image}</div>
+    <div class="grid items-center gap-12 md:grid-cols-2">${text}${image}</div>
   </div>
 </section>`;
 }
 
 function renderSchedule(data: ScheduleSection): string {
   const p = palette("schedule", data.design);
+  // Elegant foil-ringed numerals on a hairline timeline; the count is purely
+  // ordinal (decorative), not content, so it stays aria-hidden.
   const items = (data.items ?? [])
-    .map((it) => `
-      <li class="relative text-start">
-        <span class="absolute -start-[calc(2rem+5px)] top-2 h-3 w-3 rounded-full bg-accent"></span>
-        ${it.time ? `<p class="text-sm uppercase tracking-[0.2em] text-accent">${esc(it.time)}</p>` : ""}
-        <h3 class="mt-1 font-heading text-2xl ${p.heading}">${esc(it.title)}</h3>
-        ${it.description ? `<p class="mt-1 ${p.body}">${esc(it.description)}</p>` : ""}
+    .map((it, i) => `
+      <li class="relative ps-14 text-start">
+        <span aria-hidden="true" class="absolute start-0 top-0 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-accent/55 bg-[var(--site-surface)] font-heading text-sm text-accent">${i + 1}</span>
+        ${it.time ? `<p class="text-[0.72rem] uppercase tracking-[0.24em] text-accent">${esc(it.time)}</p>` : ""}
+        <h3 class="mt-1.5 font-heading text-2xl ${p.heading}" style="line-height:1.15">${esc(it.title)}</h3>
+        ${it.description ? `<p class="mt-2 leading-relaxed ${p.body}" style="max-width:54ch">${esc(it.description)}</p>` : ""}
       </li>`)
     .join("");
   return `${open("schedule", data.design)}
   <div class="${containerClass("schedule", data.design)}" style="${containerStyle("schedule", data.design)}">
-    <div class="mb-10">
-      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+    <div class="mb-12">
+      ${eyebrow(data.eyebrow ?? "", p.eyebrow)}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("schedule", data.design)}">${esc(data.title)}</h2>` : ""}
-      ${data.body ? `<p class="mx-auto mt-4 max-w-2xl ${p.body}">${esc(data.body)}</p>` : ""}
+      ${data.body ? `<p class="mx-auto mt-4 ${p.body}" style="max-width:60ch">${esc(data.body)}</p>` : ""}
     </div>
-    <ol class="mx-auto max-w-2xl space-y-8 border-s-2 ${p.line} ps-8">${items}</ol>
+    <ol class="relative mx-auto max-w-2xl space-y-11 text-start before:absolute before:bottom-3 before:top-3 before:start-[1.125rem] before:w-px before:bg-accent/25">${items}</ol>
   </div>
 </section>`;
 }
@@ -249,20 +279,20 @@ function renderLocation(data: LocationSection, labels: Dictionary): string {
     ? data.mapEmbedUrl
     : (query && m.embed !== false ? `https://www.google.com/maps?q=${enc}&output=embed` : "");
   const embed = embedSrc
-    ? `<div class="overflow-hidden rounded-2xl border ${p.line} shadow-sm"><iframe src="${esc(embedSrc)}" title="${esc(data.venue ?? "Map")}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="h-72 w-full md:h-80"></iframe></div>`
+    ? `<div class="overflow-hidden rounded-2xl border ${p.hair} bg-surface p-1.5" style="box-shadow:0 1px 2px rgba(40,32,22,0.05),0 26px 56px -32px rgba(40,32,22,0.38)"><iframe src="${esc(embedSrc)}" title="${esc(data.venue ?? "Map")}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="h-72 w-full rounded-xl md:h-80"></iframe></div>`
     : "";
   return `${open("location", data.design)}
   <div class="${containerClass("location", data.design)}" style="${containerStyle("location", data.design)}">
-    <div class="mb-10">
-      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+    <div class="mb-12">
+      ${eyebrow(data.eyebrow ?? "", p.eyebrow)}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("location", data.design)}">${esc(data.title)}</h2>` : ""}
     </div>
-    <div class="grid items-center gap-10 md:grid-cols-2">
+    <div class="grid items-center gap-12 md:grid-cols-2">
       <div class="text-center md:text-start">
-        ${data.venue ? `<h3 class="font-heading text-3xl ${p.heading}">${esc(data.venue)}</h3>` : ""}
-        ${data.address ? `<p class="mt-3 text-lg ${p.body}">${multiline(data.address)}</p>` : ""}
-        ${data.body ? `<p class="mt-4 ${p.body}">${esc(data.body)}</p>` : ""}
-        ${buttons.length ? `<div class="mt-6 flex flex-wrap justify-center gap-3 md:justify-start">${buttons.join("")}</div>` : ""}
+        ${data.venue ? `<h3 class="font-heading text-3xl ${p.heading}" style="line-height:1.15">${esc(data.venue)}</h3>` : ""}
+        ${data.address ? `<p class="mt-3 text-lg leading-relaxed ${p.body}">${multiline(data.address)}</p>` : ""}
+        ${data.body ? `<p class="mt-4 leading-relaxed ${p.body}" style="max-width:52ch">${esc(data.body)}</p>` : ""}
+        ${buttons.length ? `<div class="mt-7 flex flex-wrap justify-center gap-3 md:justify-start">${buttons.join("")}</div>` : ""}
       </div>
       ${embed}
     </div>
@@ -280,10 +310,10 @@ function renderPages(data: PagesSection, content: SiteContent): string {
     ? `<div class="mt-8 text-center"><a href="${esc(data.pdfUrl)}" target="_blank" rel="noopener" class="btn-outline">${esc(data.downloadLabel || (content.language === "he" ? "להורדת ההזמנה (PDF)" : "Download invitation (PDF)"))}</a></div>`
     : "";
   const header = (data.eyebrow || data.title || data.body) ? `
-    <div class="mb-8 text-center">
-      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+    <div class="mb-10 text-center">
+      ${eyebrow(data.eyebrow ?? "", p.eyebrow)}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("pages", data.design)}">${esc(data.title)}</h2>` : ""}
-      ${data.body ? `<p class="mx-auto mt-4 max-w-2xl ${p.body}">${esc(data.body)}</p>` : ""}
+      ${data.body ? `<p class="mx-auto mt-4 ${p.body}" style="max-width:60ch">${esc(data.body)}</p>` : ""}
     </div>` : "";
   return `${open("pages", data.design)}
   <div class="${containerClass("pages", data.design)}" style="${containerStyle("pages", data.design)}">
@@ -300,8 +330,8 @@ function renderCustom(data: CustomSection, content: SiteContent): string {
   const blocks = (data.blocks ?? []).map((b) => {
     if (b.type === "text") {
       return `<div class="mx-auto max-w-2xl ${alignClass(b.align)}">
-        ${b.heading ? `<h3 class="font-heading text-2xl ${p.heading}">${esc(b.heading)}</h3>` : ""}
-        ${b.body ? `<p class="mt-3 whitespace-pre-line leading-relaxed ${p.body}">${multiline(b.body)}</p>` : ""}
+        ${b.heading ? `<h3 class="font-heading text-2xl ${p.heading}" style="line-height:1.2">${esc(b.heading)}</h3>` : ""}
+        ${b.body ? `<p class="mx-auto mt-3 whitespace-pre-line text-lg leading-relaxed ${p.body}" style="max-width:62ch">${multiline(b.body)}</p>` : ""}
       </div>`;
     }
     if (b.type === "image") {
@@ -315,8 +345,8 @@ function renderCustom(data: CustomSection, content: SiteContent): string {
 
   return `${open("custom", data.design)}
   <div class="${containerClass("custom", data.design)}" style="${containerStyle("custom", data.design)}">
-    ${(data.eyebrow || data.title) ? `<div class="mb-8 text-center">
-      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+    ${(data.eyebrow || data.title) ? `<div class="mb-10 text-center">
+      ${eyebrow(data.eyebrow ?? "", p.eyebrow)}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("custom", data.design)}">${esc(data.title)}</h2>` : ""}
     </div>` : ""}
     ${blocks}
@@ -330,7 +360,7 @@ function renderGallery(data: GallerySection): string {
   const scrim = imgScrim("gallery", data.design);
   const imgs = (data.images ?? [])
     .map((im) => {
-      const img = `<img src="${esc(im.src)}" alt="${esc(im.alt ?? "")}" loading="lazy" class="w-full rounded-xl object-cover shadow-sm transition-transform duration-300 hover:scale-[1.02]" style="${rad}">`;
+      const img = `<img src="${esc(im.src)}" alt="${esc(im.alt ?? "")}" loading="lazy" class="w-full rounded-xl object-cover transition-transform duration-500 ease-out hover:scale-[1.015]" style="${rad ? rad + ";" : ""}box-shadow:0 1px 2px rgba(40,32,22,0.05),0 22px 44px -28px rgba(40,32,22,0.35)">`;
       const inner = scrim > 0
         ? `<div class="relative overflow-hidden rounded-xl" style="${rad}">${img}<div class="pointer-events-none absolute inset-0 bg-black" style="opacity:${scrim}"></div></div>`
         : img;
@@ -340,10 +370,10 @@ function renderGallery(data: GallerySection): string {
   const colGap = gapStyle("gallery", data.design).replace("gap:", "column-gap:");
   return `${open("gallery", data.design)}
   <div class="${containerClass("gallery", data.design)}" style="${containerStyle("gallery", data.design)}">
-    <div class="mb-10">
-      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+    <div class="mb-12">
+      ${eyebrow(data.eyebrow ?? "", p.eyebrow)}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("gallery", data.design)}">${esc(data.title)}</h2>` : ""}
-      ${data.body ? `<p class="mx-auto mt-4 max-w-2xl ${p.body}">${esc(data.body)}</p>` : ""}
+      ${data.body ? `<p class="mx-auto mt-4 ${p.body}" style="max-width:60ch">${esc(data.body)}</p>` : ""}
     </div>
     <div class="columns-2 gap-4 md:columns-3" style="${colGap}">${imgs}</div>
   </div>
@@ -365,12 +395,12 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
   const events = (data.events ?? []).filter((e) => e && e.id);
 
   const attending = (name: string) => `
-    <div class="mt-1 flex flex-col gap-3 sm:flex-row">
-      <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-lg border border-line bg-bg px-4 py-3 has-[:checked]:border-accent has-[:checked]:bg-accent/5">
-        <input type="radio" name="${name}" value="yes" required data-attending="yes" class="accent-[var(--site-accent)]"><span>${esc(L.attendingYes)}</span>
+    <div class="mt-1.5 flex flex-col gap-3 sm:flex-row">
+      <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-xl border border-line bg-bg px-4 py-3.5 text-ink transition-colors duration-150 hover:border-accent/60 has-[:checked]:border-accent has-[:checked]:bg-accent/[0.07]">
+        <input type="radio" name="${name}" value="yes" required data-attending="yes" class="h-4 w-4 accent-[var(--site-accent)]"><span class="tracking-wide">${esc(L.attendingYes)}</span>
       </label>
-      <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-lg border border-line bg-bg px-4 py-3 has-[:checked]:border-accent has-[:checked]:bg-accent/5">
-        <input type="radio" name="${name}" value="no" data-attending="no" class="accent-[var(--site-accent)]"><span>${esc(L.attendingNo)}</span>
+      <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-xl border border-line bg-bg px-4 py-3.5 text-ink transition-colors duration-150 hover:border-accent/60 has-[:checked]:border-accent has-[:checked]:bg-accent/[0.07]">
+        <input type="radio" name="${name}" value="no" data-attending="no" class="h-4 w-4 accent-[var(--site-accent)]"><span class="tracking-wide">${esc(L.attendingNo)}</span>
       </label>
     </div>`;
 
@@ -383,9 +413,9 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
   const eventBlocks = events.length
     ? `<input type="hidden" name="event_ids" value="${esc(events.map((e) => e.id).join(","))}">
        ${events.map((e, i) => `
-        <div data-eventrow class="rounded-lg border border-line p-4">
+        <div data-eventrow class="rounded-xl border border-line bg-bg/60 p-5">
           <input type="hidden" name="eventlabel_${esc(e.id)}" value="${esc(e.label)}">
-          <p class="mb-2 font-heading text-xl ${p.heading}">${esc(e.label)}</p>
+          <p class="mb-3 font-heading text-xl ${p.heading}">${esc(e.label)}</p>
           <span class="field-label">${esc(L.attending)} ${star}</span>
           ${attending(`att_${esc(e.id)}`)}
           ${guestSelect(`guests_${esc(e.id)}`, `rsvp-g-${i}`)}
@@ -415,7 +445,7 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
       }).join("")}` : "";
 
   const form = `
-    <form ${formAttrs("/api/rsvp", ctx.editor)} class="space-y-5 rounded-2xl border border-line bg-surface p-5 text-start shadow-sm sm:p-8">
+    <form ${formAttrs("/api/rsvp", ctx.editor)} class="space-y-5 rounded-2xl border border-line bg-surface p-6 text-start sm:p-9" style="box-shadow:0 1px 2px rgba(40,32,22,0.04),0 36px 70px -36px rgba(40,32,22,0.34)">
       <input type="hidden" name="site_id" value="${esc(content.siteId)}">
       <input type="hidden" name="language" value="${esc(content.language)}">
       <div>
@@ -437,11 +467,11 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
 
   return `${open("rsvp", data.design)}
   <div class="${containerClass("rsvp", data.design)}" style="${containerStyle("rsvp", data.design)}">
-    <div class="mb-9">
-      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+    <div class="mb-10">
+      ${eyebrow(data.eyebrow ?? "", p.eyebrow)}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("rsvp", data.design)}">${esc(data.title)}</h2>` : ""}
-      ${data.body ? `<p class="mx-auto mt-4 max-w-xl ${p.body}">${esc(data.body)}</p>` : ""}
-      ${data.deadlineNote ? `<p class="mt-4 text-sm uppercase tracking-[0.2em] text-accent">${esc(data.deadlineNote)}</p>` : ""}
+      ${data.body ? `<p class="mx-auto mt-4 ${p.body}" style="max-width:46ch">${esc(data.body)}</p>` : ""}
+      ${data.deadlineNote ? `<p class="mx-auto mt-6 inline-flex items-center gap-2.5 rounded-full border border-accent/35 px-4 py-1.5 text-[0.72rem] uppercase tracking-[0.22em] text-accent"><span aria-hidden="true" class="h-1.5 w-1.5 rotate-45 bg-accent/70"></span>${esc(data.deadlineNote)}</p>` : ""}
     </div>
     ${form}
   </div>
@@ -455,12 +485,12 @@ function renderContact(data: ContactSection, content: SiteContent, ctx: RenderCt
   const ts = ctx.turnstileSiteKey && !ctx.editor ? `<div class="cf-turnstile" data-sitekey="${esc(ctx.turnstileSiteKey)}"></div>` : "";
   return `${open("contact", data.design)}
   <div class="${containerClass("contact", data.design)}" style="${containerStyle("contact", data.design)}">
-    <div class="mb-9">
-      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+    <div class="mb-10">
+      ${eyebrow(data.eyebrow ?? "", p.eyebrow)}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("contact", data.design)}">${esc(data.title)}</h2>` : ""}
-      ${data.body ? `<p class="mx-auto mt-4 ${p.body}">${esc(data.body)}</p>` : ""}
+      ${data.body ? `<p class="mx-auto mt-4 ${p.body}" style="max-width:48ch">${esc(data.body)}</p>` : ""}
     </div>
-    <form ${formAttrs("/api/contact", ctx.editor)} class="space-y-5 rounded-2xl border border-line bg-bg p-5 text-start shadow-sm sm:p-8">
+    <form ${formAttrs("/api/contact", ctx.editor)} class="space-y-5 rounded-2xl border border-line bg-surface p-6 text-start sm:p-9" style="box-shadow:0 1px 2px rgba(40,32,22,0.04),0 36px 70px -36px rgba(40,32,22,0.34)">
       <input type="hidden" name="site_id" value="${esc(content.siteId)}">
       <input type="hidden" name="language" value="${esc(content.language)}">
       <div><label class="field-label" for="contact-name">${esc(L.contactName)} ${star}</label><input class="field-input" id="contact-name" name="name" type="text" required autocomplete="name"></div>
@@ -477,21 +507,23 @@ function renderFaq(data: FaqSection): string {
   const p = palette("faq", data.design);
   const items = (data.items ?? [])
     .map((it) => `
-      <details class="group py-5 text-start">
-        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-lg ${p.heading}">
-          <span class="font-heading">${esc(it.question)}</span>
-          <span class="text-accent transition-transform duration-200 group-open:rotate-45">+</span>
+      <details class="group py-6 text-start">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-heading text-xl ${p.heading}">
+          <span class="leading-snug">${esc(it.question)}</span>
+          <span aria-hidden="true" class="relative mt-1 inline-flex h-6 w-6 flex-none items-center justify-center rounded-full border border-accent/45 text-accent transition-transform duration-300 group-open:rotate-45">
+            <span class="absolute h-px w-2.5 bg-current"></span><span class="absolute h-2.5 w-px bg-current"></span>
+          </span>
         </summary>
-        <p class="mt-3 leading-relaxed ${p.body}">${multiline(it.answer)}</p>
+        <p class="mt-3.5 leading-relaxed ${p.body}" style="max-width:64ch">${multiline(it.answer)}</p>
       </details>`)
     .join("");
   return `${open("faq", data.design)}
   <div class="${containerClass("faq", data.design)}" style="${containerStyle("faq", data.design)}">
-    <div class="mb-9">
-      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+    <div class="mb-10">
+      ${eyebrow(data.eyebrow ?? "", p.eyebrow)}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("faq", data.design)}">${esc(data.title)}</h2>` : ""}
     </div>
-    <div class="mx-auto max-w-3xl divide-y ${p.line} border-y ${p.line}">${items}</div>
+    <div class="mx-auto max-w-3xl divide-y ${p.hair} border-y ${p.hair}">${items}</div>
   </div>
 </section>`;
 }
@@ -499,11 +531,12 @@ function renderFaq(data: FaqSection): string {
 function renderFooter(data: FooterContent | undefined): string {
   const year = new Date().getFullYear();
   return `
-<footer class="border-t border-line bg-surface py-12 text-center">
+<footer class="border-t border-line bg-surface py-16 text-center">
   <div class="mx-auto max-w-5xl px-6">
-    ${data?.message ? `<p class="font-heading text-2xl text-primary">${esc(data.message)}</p>` : ""}
-    ${data?.credit ? `<p class="mt-3 text-sm text-muted">${esc(data.credit)}</p>` : ""}
-    <p class="mt-3 text-xs uppercase tracking-[0.2em] text-muted/70">© ${year}</p>
+    ${foilRule("mx-auto mb-9")}
+    ${data?.message ? `<p class="font-heading text-3xl text-primary" style="line-height:1.2;letter-spacing:-0.01em">${esc(data.message)}</p>` : ""}
+    ${data?.credit ? `<p class="mt-4 text-sm leading-relaxed text-muted">${esc(data.credit)}</p>` : ""}
+    <p class="mt-5 text-[0.7rem] uppercase tracking-[0.26em] text-muted/65">© ${year}</p>
   </div>
 </footer>`;
 }

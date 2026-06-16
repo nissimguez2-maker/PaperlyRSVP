@@ -11,18 +11,25 @@
  */
 import type { SectionDesign, SectionKey } from "./types";
 
-/** Sensible per-section defaults so a section looks right with no overrides. */
+/**
+ * Sensible per-section defaults so a section looks right with no overrides.
+ *
+ * Spacing is intentionally generous (editorial vertical rhythm) — these are rem
+ * values that sectionStyle() clamps down on phones, so they stay mobile-safe.
+ * Alignment varies on purpose: event details read as an asymmetric editorial
+ * spread (start-aligned), most other sections centre their heading block.
+ */
 export const DEFAULT_DESIGN: Record<SectionKey, Required<Pick<SectionDesign, "spaceTop" | "spaceBottom" | "align" | "width" | "titleScale" | "bg">>> = {
   pages: { spaceTop: 0, spaceBottom: 0, align: "center", width: "wide", titleScale: 1, bg: "bg" },
-  custom: { spaceTop: 6, spaceBottom: 6, align: "center", width: "normal", titleScale: 1, bg: "bg" },
+  custom: { spaceTop: 8, spaceBottom: 8, align: "center", width: "normal", titleScale: 1, bg: "bg" },
   hero: { spaceTop: 0, spaceBottom: 0, align: "center", width: "normal", titleScale: 1, bg: "bg" },
-  eventDetails: { spaceTop: 6, spaceBottom: 6, align: "start", width: "normal", titleScale: 1, bg: "bg" },
-  schedule: { spaceTop: 6, spaceBottom: 6, align: "center", width: "normal", titleScale: 1, bg: "surface" },
-  location: { spaceTop: 6, spaceBottom: 6, align: "center", width: "normal", titleScale: 1, bg: "bg" },
-  gallery: { spaceTop: 6, spaceBottom: 6, align: "center", width: "normal", titleScale: 1, bg: "surface" },
-  rsvp: { spaceTop: 6, spaceBottom: 6, align: "center", width: "narrow", titleScale: 1, bg: "bg" },
-  contact: { spaceTop: 6, spaceBottom: 6, align: "center", width: "narrow", titleScale: 1, bg: "surface" },
-  faq: { spaceTop: 6, spaceBottom: 6, align: "center", width: "narrow", titleScale: 1, bg: "bg" },
+  eventDetails: { spaceTop: 9, spaceBottom: 9, align: "start", width: "normal", titleScale: 1, bg: "bg" },
+  schedule: { spaceTop: 9, spaceBottom: 9, align: "center", width: "normal", titleScale: 1, bg: "surface" },
+  location: { spaceTop: 9, spaceBottom: 9, align: "center", width: "normal", titleScale: 1, bg: "bg" },
+  gallery: { spaceTop: 9, spaceBottom: 9, align: "center", width: "normal", titleScale: 1, bg: "surface" },
+  rsvp: { spaceTop: 9, spaceBottom: 9, align: "center", width: "narrow", titleScale: 1, bg: "bg" },
+  contact: { spaceTop: 9, spaceBottom: 9, align: "center", width: "narrow", titleScale: 1, bg: "surface" },
+  faq: { spaceTop: 9, spaceBottom: 9, align: "center", width: "narrow", titleScale: 1, bg: "bg" },
 };
 
 const WIDTH_CLASS: Record<NonNullable<SectionDesign["width"]>, string> = {
@@ -129,29 +136,39 @@ export function itemsAlignClass(key: SectionKey, d?: SectionDesign): string {
   return ALIGN_ITEMS[resolveDesign(key, d).align];
 }
 
-/** Extra heading style (letter-spacing + line-height) shared by all headings. */
+/**
+ * Extra heading style (letter-spacing + line-height) shared by all headings.
+ * Defaults give section headings a refined, slightly tight editorial rhythm
+ * (a hair of negative tracking + comfortable leading) unless the editor sets
+ * its own values, which always win.
+ */
 function headingExtra(r: ReturnType<typeof resolveDesign>): string {
   const parts: string[] = [];
-  if (num(r.headingTracking)) parts.push(`letter-spacing:${r.headingTracking}em`);
-  if (num(r.headingLeading)) parts.push(`line-height:${r.headingLeading}`);
-  return parts.length ? ";" + parts.join(";") : "";
+  parts.push(num(r.headingTracking) ? `letter-spacing:${r.headingTracking}em` : "letter-spacing:-0.012em");
+  parts.push(num(r.headingLeading) ? `line-height:${r.headingLeading}` : "line-height:1.08");
+  return ";" + parts.join(";");
 }
 
 /**
  * Heading font-size — a responsive clamp() multiplied by the editor's scale —
- * plus optional letter-spacing / line-height.
+ * plus optional letter-spacing / line-height. The clamp range is a touch wider
+ * than before so section titles feel more confident on desktop while staying
+ * tidy at 390px.
  */
 export function titleStyle(key: SectionKey, d?: SectionDesign): string {
   const r = resolveDesign(key, d);
   const scale = r.titleScale || 1;
-  return `font-size:calc(clamp(2rem, 7vw, 3.25rem) * ${scale})${headingExtra(r)}`;
+  return `font-size:calc(clamp(2.15rem, 6.4vw, 3.5rem) * ${scale})${headingExtra(r)}`;
 }
 
 /** Heading tweaks for the hero (which sets its own giant font-size). */
 export function heroHeadingStyle(d?: SectionDesign): string {
   const r = resolveDesign("hero", d);
   const scale = r.titleScale || 1;
-  return `font-size:calc(clamp(2.75rem, 13vw, 5rem) * ${scale})${headingExtra(r)}`;
+  // Slightly tighter default leading for the giant display line.
+  const lead = num(r.headingLeading) ? `;line-height:${r.headingLeading}` : ";line-height:1.02";
+  const track = num(r.headingTracking) ? `;letter-spacing:${r.headingTracking}em` : ";letter-spacing:-0.015em";
+  return `font-size:calc(clamp(2.85rem, 13vw, 5.25rem) * ${scale})${track}${lead}`;
 }
 
 /** Hero text vertical anchor classes. */
@@ -179,16 +196,30 @@ export function buttonClass(key: SectionKey, d?: SectionDesign): string {
 }
 
 /**
+ * A refined "foil" rule: a centred hairline that fades out at both ends with a
+ * small gold lozenge at its middle — classic engraved-stationery detailing.
+ * Exposed as an internal helper so render.ts can reuse the exact same motif for
+ * section sub-dividers without duplicating the markup.
+ */
+export function foilRule(extraClass = "mx-auto mb-12"): string {
+  return `<div aria-hidden="true" class="flex items-center justify-center gap-3 ${extraClass}">
+    <span class="h-px w-12 bg-gradient-to-l from-accent/55 to-transparent sm:w-16"></span>
+    <span class="h-1.5 w-1.5 rotate-45 bg-accent/70"></span>
+    <span class="h-px w-12 bg-gradient-to-r from-accent/55 to-transparent sm:w-16"></span>
+  </div>`;
+}
+
+/**
  * Optional divider drawn at the top edge of a section. Returns HTML (or "").
- * "line" = a thin centred rule; "gradient" = a soft fade from the page bg.
+ * "line" = the refined gold foil rule; "gradient" = a soft fade from above.
  */
 export function dividerHtml(key: SectionKey, d?: SectionDesign): string {
   const r = resolveDesign(key, d);
   if (r.divider === "line") {
-    return `<div aria-hidden="true" class="mx-auto mb-10 h-px w-16 bg-accent/40"></div>`;
+    return foilRule("mx-auto mb-12");
   }
   if (r.divider === "gradient") {
-    return `<div aria-hidden="true" class="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/5 to-transparent"></div>`;
+    return `<div aria-hidden="true" class="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/[0.04] to-transparent"></div>`;
   }
   return "";
 }
