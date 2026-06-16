@@ -15,76 +15,178 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Paperly Studio</title>
     <link rel="stylesheet" href="/site.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+    />
     <link rel="icon" href="/favicon.svg" />
     <style is:global>
       html, body { height: 100%; }
-      body { background: #ececed; overflow: hidden; }
+      body {
+        background: #ece9e2; /* warm parchment stage */
+        overflow: hidden;
+        font-family: var(--font-pl-ui);
+        color: var(--color-pl-ink);
+      }
 
       /* Device stage: #pl-frame fills the stage; the iframe is centered in it. */
       #pl-frame { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
       #pl-frame.pl-phone #pl-frame-iframe {
         width: 390px; max-width: 100%; height: 100%; max-height: 760px;
-        border: 12px solid #111; border-radius: 46px; background: #fff;
-        box-shadow: 0 24px 60px rgba(0,0,0,.28);
+        border: 12px solid #211d17; border-radius: 46px; background: #fff;
+        box-shadow: 0 28px 64px -18px rgba(33,29,23,.45), 0 6px 16px rgba(33,29,23,.16);
       }
       #pl-frame.pl-desktop #pl-frame-iframe {
         width: 100%; height: 100%;
-        border: 1px solid #d9d9da; border-radius: 12px; background: #fff;
-        box-shadow: 0 18px 50px rgba(0,0,0,.14);
+        border: 1px solid #d8cfbe; border-radius: 14px; background: #fff;
+        box-shadow: 0 22px 54px -22px rgba(33,29,23,.30);
       }
       #pl-frame-iframe { border: 0; }
 
-      /* Device toggle active state (light toolbar) */
-      .pl-dev-active { background: #111 !important; color: #fff !important; }
+      /* Device toggle active state (warm ink) */
+      .pl-dev-active { background: #211d17 !important; color: #fcfaf5 !important; }
 
       /* Collapsible property groups: rotate the caret when open */
       details.pl-group[open] .pl-caret { transform: rotate(180deg); }
+      details.pl-group[open] > summary { border-bottom: 1px solid var(--color-pl-line); }
 
-      /* Rail buttons */
-      .pl-rail-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 6px; border-radius:12px; font-size:10px; }
+      /* Left icon rail buttons */
+      .pl-rail-btn {
+        display:flex; flex-direction:column; align-items:center; gap:5px;
+        width:48px; padding:9px 4px; border-radius:13px;
+        font-size:10px; font-weight:500; letter-spacing:.01em;
+        color: rgba(252,250,245,.62); transition: background .15s, color .15s;
+      }
+      .pl-rail-btn svg { width:21px; height:21px; }
+      .pl-rail-btn:hover { background: rgba(252,250,245,.10); color:#fcfaf5; }
+      /* Active rail state (toggled by updateRail in studio.ts) */
+      .pl-rail-active { background: var(--color-pl-gold); color:#fff; box-shadow: 0 2px 10px -3px rgba(168,127,70,.7); }
+      .pl-rail-active:hover { background: var(--color-pl-gold); color:#fff; }
 
-      /* "?" help bubble (hover shows the native tooltip) */
-      .pl-help { display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; margin-inline-start:6px;
-        border-radius:9999px; background:#e5e5e5; color:#555; font-size:10px; font-weight:700; cursor:help; }
-      .pl-help:hover { background:#111; color:#fff; }
+      /* "?" help bubble (hover shows the native tooltip) — gold on wash */
+      .pl-help {
+        display:inline-flex; align-items:center; justify-content:center;
+        width:15px; height:15px; margin-inline-start:6px;
+        border-radius:9999px; background:var(--color-pl-wash); color:var(--color-pl-gold);
+        font-size:10px; font-weight:700; line-height:1; cursor:help;
+        border:1px solid color-mix(in srgb, var(--color-pl-gold) 28%, transparent);
+        transition: background .15s, color .15s;
+      }
+      .pl-help:hover { background:var(--color-pl-gold); color:#fff; border-color:var(--color-pl-gold); }
+
+      /* Studio range sliders — gold accent, calmer track */
+      #pl-panel input[type="range"] { accent-color: var(--color-pl-gold); height: 4px; }
+      /* Native scrollbar in the panel, warm and slim */
+      #pl-panel { scrollbar-width: thin; scrollbar-color: #d9cfbd transparent; }
+      #pl-panel::-webkit-scrollbar { width: 9px; }
+      #pl-panel::-webkit-scrollbar-thumb { background: #d9cfbd; border-radius: 9999px; border: 2px solid var(--color-pl-paper); }
     </style>
   </head>
   <body>
     <div class="flex h-full flex-col">
       <!-- App bar -->
-      <header class="flex items-center gap-3 bg-neutral-900 px-3 py-2 text-white">
-        <a href="/admin" class="rounded-md px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white">← Sites</a>
-        <span class="font-semibold tracking-wide">Paperly&nbsp;Studio</span>
-        <span class="ms-1 flex overflow-hidden rounded-md border border-white/15">
-          <button id="pl-undo" title="Undo (Ctrl/Cmd+Z)" class="px-2.5 py-1 text-sm hover:bg-white/10">↶</button>
-          <button id="pl-redo" title="Redo (Ctrl/Cmd+Shift+Z)" class="px-2.5 py-1 text-sm hover:bg-white/10">↷</button>
+      <header class="pl-topbar shrink-0 px-3 py-2">
+        <a
+          href="/admin"
+          class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-pl-paper/70 transition-colors hover:bg-white/10 hover:text-pl-paper"
+        >
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="h-3.5 w-3.5">
+            <path d="M10 3.5 5.5 8 10 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Sites
+        </a>
+
+        <span class="mx-1 h-5 w-px bg-white/12"></span>
+
+        <span class="flex items-baseline gap-2">
+          <span class="pl-wordmark text-pl-paper">Paperly</span>
+          <span class="text-[0.62rem] font-medium uppercase tracking-[0.32em] text-pl-gold-2">Studio</span>
         </span>
-        <span id="pl-status" class="ms-auto text-xs text-neutral-300">Loading…</span>
-        <a id="pl-view" href="#" target="_blank" class="rounded-md border border-white/25 px-3 py-1.5 text-xs hover:bg-white/10">Preview ↗</a>
-        <button id="pl-save" class="rounded-md bg-white px-4 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-neutral-200">Save</button>
+
+        <span class="ms-3 inline-flex overflow-hidden rounded-lg bg-white/[0.06] ring-1 ring-white/10">
+          <button id="pl-undo" title="Undo (Ctrl/Cmd+Z)" class="px-2.5 py-1.5 text-pl-paper/70 transition-colors hover:bg-white/10 hover:text-pl-paper">
+            <svg viewBox="0 0 18 18" fill="none" aria-hidden="true" class="h-4 w-4">
+              <path d="M6 5 3 8l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3.5 8H11a4 4 0 0 1 0 8H8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <span class="my-1 w-px bg-white/10"></span>
+          <button id="pl-redo" title="Redo (Ctrl/Cmd+Shift+Z)" class="px-2.5 py-1.5 text-pl-paper/70 transition-colors hover:bg-white/10 hover:text-pl-paper">
+            <svg viewBox="0 0 18 18" fill="none" aria-hidden="true" class="h-4 w-4">
+              <path d="M12 5l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M14.5 8H7a4 4 0 0 0 0 8h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </span>
+
+        <span id="pl-status" class="ms-auto inline-flex items-center gap-1.5 text-xs text-pl-paper/65">Loading…</span>
+
+        <a
+          id="pl-view"
+          href="#"
+          target="_blank"
+          class="ms-1 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-pl-paper/85 ring-1 ring-white/20 transition-colors hover:bg-white/10 hover:text-pl-paper"
+        >
+          Preview
+          <svg viewBox="0 0 14 14" fill="none" aria-hidden="true" class="h-3 w-3">
+            <path d="M5 3h6v6M11 3 4 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <button id="pl-save" class="pl-btn-gold px-5 py-1.5 text-xs font-semibold shadow-sm">Save</button>
       </header>
 
       <div class="flex min-h-0 flex-1">
         <!-- Left icon rail -->
-        <nav class="flex w-16 shrink-0 flex-col items-center gap-1.5 bg-neutral-900 py-3 text-neutral-400">
-          <button data-rail="sections" class="pl-rail-btn hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">▤</span>Sections</button>
-          <button data-rail="theme" class="pl-rail-btn hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">🎨</span>Theme</button>
-          <button data-rail="settings" class="pl-rail-btn hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">⚙</span>Settings</button>
-          <button id="pl-media" class="pl-rail-btn mt-1 text-neutral-400 hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">🖼</span>Media</button>
+        <nav class="flex w-[60px] shrink-0 flex-col items-center gap-1 bg-pl-forest py-3">
+          <button data-rail="sections" class="pl-rail-btn" title="Sections">
+            <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <rect x="4" y="4" width="14" height="4" rx="1.4" stroke="currentColor" stroke-width="1.6"/>
+              <rect x="4" y="10.5" width="14" height="4" rx="1.4" stroke="currentColor" stroke-width="1.6"/>
+              <rect x="4" y="17" width="9" height="1.6" rx="0.8" fill="currentColor"/>
+            </svg>
+            Sections
+          </button>
+          <button data-rail="theme" class="pl-rail-btn" title="Theme">
+            <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <path d="M11 3.2c-4.3 0-7.8 3.3-7.8 7.4 0 3.4 2.6 5.5 5.4 5.5 1.3 0 1.9-.8 1.9-1.7 0-1 -.8-1.4-.8-2.3 0-.8.7-1.4 1.6-1.4h1.6c2.6 0 4-1.6 4-3.9 0-3-3-3.6-5.9-3.6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <circle cx="7.3" cy="9.4" r="1.05" fill="currentColor"/>
+              <circle cx="11" cy="7.4" r="1.05" fill="currentColor"/>
+              <circle cx="14.6" cy="9.4" r="1.05" fill="currentColor"/>
+            </svg>
+            Theme
+          </button>
+          <button data-rail="settings" class="pl-rail-btn" title="Settings">
+            <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <circle cx="11" cy="11" r="2.6" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M11 2.8v2.1M11 17.1v2.1M19.2 11h-2.1M4.9 11H2.8M16.8 5.2l-1.5 1.5M6.7 15.3l-1.5 1.5M16.8 16.8l-1.5-1.5M6.7 6.7 5.2 5.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            Settings
+          </button>
+          <span class="my-1.5 h-px w-7 bg-white/10"></span>
+          <button id="pl-media" class="pl-rail-btn" title="Media library">
+            <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <rect x="3.5" y="4.5" width="15" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <circle cx="8" cy="9" r="1.4" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M4 15.5 8.5 11l3 3 2.5-2.3 3.7 3.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Media
+          </button>
         </nav>
 
         <!-- Properties panel -->
-        <aside id="pl-panel" class="w-[340px] shrink-0 overflow-y-auto border-e border-neutral-200 bg-white"></aside>
+        <aside id="pl-panel" class="w-[348px] shrink-0 overflow-y-auto border-e border-pl-line bg-pl-paper"></aside>
 
         <!-- Canvas / device stage -->
-        <main class="flex min-h-0 flex-1 flex-col bg-[#ececed]">
-          <div class="flex items-center justify-center gap-1 border-b border-neutral-200 bg-white/70 py-1.5">
-            <div class="flex overflow-hidden rounded-lg border border-neutral-300 text-xs">
-              <button data-device="phone" class="pl-dev-active px-3 py-1">Phone</button>
-              <button data-device="desktop" class="px-3 py-1">Desktop</button>
+        <main class="flex min-h-0 flex-1 flex-col bg-pl-canvas">
+          <div class="flex items-center justify-center border-b border-pl-line bg-pl-paper/60 py-2 backdrop-blur">
+            <div class="inline-flex overflow-hidden rounded-full border border-pl-line bg-pl-paper p-0.5 text-xs font-medium">
+              <button data-device="phone" class="pl-dev-active rounded-full px-3.5 py-1 text-pl-ink-2 transition-colors">Phone</button>
+              <button data-device="desktop" class="rounded-full px-3.5 py-1 text-pl-ink-2 transition-colors">Desktop</button>
             </div>
           </div>
-          <div id="pl-stage" class="min-h-0 flex-1 overflow-hidden p-5">
+          <div id="pl-stage" class="min-h-0 flex-1 overflow-hidden p-6">
             <div id="pl-frame" class="pl-phone"><iframe id="pl-frame-iframe" title="Live preview"></iframe></div>
           </div>
         </main>

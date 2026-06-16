@@ -188,11 +188,11 @@ function helpDot(text?: string): string {
 
 const I = {
   group: (label: string, inner: string, help?: string) =>
-    `<div class="mb-4"><label class="mb-1.5 flex items-center text-xs font-medium text-neutral-500">${esc(label)}${helpDot(help)}</label>${inner}</div>`,
+    `<div class="mb-4"><label class="pl-label flex items-center">${esc(label)}${helpDot(help)}</label>${inner}</div>`,
   input: (path: string, value: string, type = "text", placeholder = "") =>
-    `<input type="${type}" data-path="${path}" value="${esc(value)}"${placeholder ? ` placeholder="${esc(placeholder)}"` : ""} class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900">`,
+    `<input type="${type}" data-path="${path}" value="${esc(value)}"${placeholder ? ` placeholder="${esc(placeholder)}"` : ""} class="pl-input">`,
   area: (path: string, value: string, placeholder = "") =>
-    `<textarea data-path="${path}" rows="3"${placeholder ? ` placeholder="${esc(placeholder)}"` : ""} class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900">${esc(value)}</textarea>`,
+    `<textarea data-path="${path}" rows="3"${placeholder ? ` placeholder="${esc(placeholder)}"` : ""} class="pl-input leading-relaxed">${esc(value)}</textarea>`,
 };
 
 function fieldHtml(field: Field, base: string, value: any): string {
@@ -205,36 +205,36 @@ function fieldHtml(field: Field, base: string, value: any): string {
     case "number":
       return I.group(`${field.label} (${value ?? 0})`,
         `<div class="flex items-center gap-2"><input type="range" data-path="${path}" min="${field.min ?? 0}" max="${field.max ?? 1}" step="${field.step ?? 0.1}" value="${value ?? 0}" class="w-full">
-        <input type="number" data-path="${path}" min="${field.min ?? 0}" max="${field.max ?? 1}" step="${field.step ?? 0.1}" value="${value ?? 0}" class="w-16 shrink-0 rounded-md border border-neutral-300 px-2 py-1 text-xs"></div>`, help);
+        <input type="number" data-path="${path}" min="${field.min ?? 0}" max="${field.max ?? 1}" step="${field.step ?? 0.1}" value="${value ?? 0}" class="w-16 shrink-0 rounded-lg border border-pl-line bg-pl-paper px-2 py-1 text-xs text-pl-ink outline-none focus:border-pl-gold"></div>`, help);
     case "toggle": {
       const on = value !== false; // default ON
-      return `<label class="mb-3 flex cursor-pointer items-center gap-2 text-sm text-neutral-700">
-        <input type="checkbox" data-path="${path}"${on ? " checked" : ""} class="h-4 w-4 accent-neutral-900">${esc(field.label)}${helpDot(help)}</label>`;
+      return `<label class="mb-3 flex cursor-pointer items-center gap-2 text-sm text-pl-ink-2">
+        <input type="checkbox" data-path="${path}"${on ? " checked" : ""} class="h-4 w-4 accent-pl-gold">${esc(field.label)}${helpDot(help)}</label>`;
     }
     case "datetime":
       return I.group(field.label,
-        `<input type="datetime-local" data-path="${path}" value="${esc(value ?? "")}" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">`, help);
+        `<input type="datetime-local" data-path="${path}" value="${esc(value ?? "")}" class="pl-input">`, help);
     case "pdf": {
       const count = Array.isArray(value) ? value.length : 0;
       return I.group(field.label,
-        `<input type="file" accept="application/pdf,.pdf" data-pdf="${path}" class="block w-full text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white">
-        <p class="mt-1 text-[11px] text-neutral-400">Each page becomes a full-width image. ${count ? count + " page(s) loaded — manage them under Pages below." : "The original PDF is kept for a download button."}</p>`, help);
+        `<input type="file" accept="application/pdf,.pdf" data-pdf="${path}" class="block w-full text-xs text-pl-ink-2 file:mr-2 file:rounded-md file:border-0 file:bg-pl-ink file:px-3 file:py-1.5 file:text-pl-paper file:cursor-pointer hover:file:bg-pl-forest">
+        <p class="mt-1.5 text-[11px] leading-relaxed text-pl-muted">Each page becomes a full-width image. ${count ? count + " page(s) loaded — manage them under Pages below." : "The original PDF is kept for a download button."}</p>`, help);
     }
     case "image": {
       const thumb = value
-        ? `<img src="${esc(value)}" alt="" class="mb-2 h-24 w-full rounded-md object-cover border border-neutral-200">`
-        : `<div class="mb-2 flex h-24 w-full items-center justify-center rounded-md border border-dashed border-neutral-300 text-xs text-neutral-400">No image</div>`;
+        ? `<img src="${esc(value)}" alt="" class="mb-2 h-24 w-full rounded-lg object-cover border border-pl-line">`
+        : `<div class="mb-2 flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-pl-line bg-pl-wash/40 text-xs text-pl-muted">No image</div>`;
       return I.group(field.label,
         `${thumb}
         <div class="flex items-center gap-2">
-          <input type="file" accept="image/*" data-file="${path}" class="block flex-1 text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white">
-          <button type="button" data-action="pick-media" data-path="${path}" class="shrink-0 rounded-md border border-neutral-300 px-2.5 py-1.5 text-xs hover:bg-neutral-100">Library</button>
+          <input type="file" accept="image/*" data-file="${path}" class="block flex-1 text-xs text-pl-ink-2 file:mr-2 file:rounded-md file:border-0 file:bg-pl-ink file:px-3 file:py-1.5 file:text-pl-paper file:cursor-pointer hover:file:bg-pl-forest">
+          <button type="button" data-action="pick-media" data-path="${path}" class="pl-btn-ghost shrink-0 px-2.5 py-1.5 text-xs ring-1 ring-pl-line">Library</button>
         </div>
-        <p class="mt-1 text-[11px] text-neutral-400">Uploaded full-resolution (HD), saved to your media library.</p>`, help);
+        <p class="mt-1.5 text-[11px] leading-relaxed text-pl-muted">Uploaded full-resolution (HD), saved to your media library.</p>`, help);
     }
     case "link": {
       const v = value ?? {};
-      return `<div class="mb-4 rounded-md border border-neutral-200 p-3"><p class="mb-2 text-xs font-medium text-neutral-500">${esc(field.label)}</p>
+      return `<div class="mb-4 rounded-xl border border-pl-line bg-pl-wash/30 p-3"><p class="pl-label">${esc(field.label)}</p>
         ${I.group("Button text", I.input(`${path}.label`, v.label ?? ""))}
         ${I.group("Goes to", linkTargetSelect(`${path}.href`, v.href ?? ""))}
         ${I.group("…or a custom link", I.input(`${path}.href`, v.href ?? ""))}</div>`;
@@ -242,24 +242,24 @@ function fieldHtml(field: Field, base: string, value: any): string {
     case "list": {
       const arr: any[] = Array.isArray(value) ? value : [];
       const rows = arr.map((item, i) => `
-        <div class="mb-3 rounded-md border border-neutral-200 p-3">
-          <div class="mb-2 flex items-center justify-between"><span class="text-xs font-semibold text-neutral-500">${esc(field.itemLabel)} ${i + 1}</span>
+        <div class="mb-3 rounded-xl border border-pl-line bg-pl-paper p-3">
+          <div class="mb-2 flex items-center justify-between"><span class="text-[11px] font-semibold uppercase tracking-wide text-pl-muted">${esc(field.itemLabel)} ${i + 1}</span>
             <span class="flex gap-1">
-              <button data-action="list-up" data-path="${path}.${i}" class="rounded bg-neutral-100 px-2 py-1 text-xs">↑</button>
-              <button data-action="list-down" data-path="${path}.${i}" class="rounded bg-neutral-100 px-2 py-1 text-xs">↓</button>
-              <button data-action="list-del" data-path="${path}.${i}" class="rounded bg-red-50 px-2 py-1 text-xs text-red-600">✕</button>
+              <button data-action="list-up" data-path="${path}.${i}" title="Move up" class="rounded-md bg-pl-wash px-2 py-1 text-xs text-pl-ink-2 hover:bg-pl-gold/20">↑</button>
+              <button data-action="list-down" data-path="${path}.${i}" title="Move down" class="rounded-md bg-pl-wash px-2 py-1 text-xs text-pl-ink-2 hover:bg-pl-gold/20">↓</button>
+              <button data-action="list-del" data-path="${path}.${i}" title="Remove" class="rounded-md bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100">✕</button>
             </span></div>
           ${field.item.map((f) => fieldHtml(f, `${path}.${i}`, item?.[f.key])).join("")}
         </div>`).join("");
-      return `<div class="mb-4"><label class="mb-1.5 flex items-center text-xs font-medium text-neutral-500">${esc(field.label)}${helpDot(help)}</label>${rows}
-        <button data-action="list-add" data-path="${path}" class="w-full rounded-md border border-dashed border-neutral-300 py-2 text-xs text-neutral-600 hover:border-neutral-900">+ Add ${esc(field.itemLabel)}</button></div>`;
+      return `<div class="mb-4"><label class="pl-label flex items-center">${esc(field.label)}${helpDot(help)}</label>${rows}
+        <button data-action="list-add" data-path="${path}" class="w-full rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ Add ${esc(field.itemLabel)}</button></div>`;
     }
   }
 }
 
 function selectEl(path: string, value: string, options: [string, string][], rerender = false): string {
   const opts = options.map(([v, l]) => `<option value="${v}"${v === value ? " selected" : ""}>${esc(l)}</option>`).join("");
-  return `<select data-path="${path}"${rerender ? " data-rerender" : ""} class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">${opts}</select>`;
+  return `<select data-path="${path}"${rerender ? " data-rerender" : ""} class="pl-select">${opts}</select>`;
 }
 
 /** A dropdown that points a link at a section (no need to type the #anchor). */
@@ -275,7 +275,7 @@ function range(path: string, value: number, min: number, max: number, step: numb
   // Slider AND a manual number box (both bound to the same path, kept in sync).
   return `<div class="flex items-center gap-2">
     <input type="range" data-path="${path}" min="${min}" max="${max}" step="${step}" value="${value}" class="w-full">
-    <input type="number" data-path="${path}" min="${min}" max="${max}" step="${step}" value="${value}" class="w-16 shrink-0 rounded-md border border-neutral-300 px-2 py-1 text-xs">
+    <input type="number" data-path="${path}" min="${min}" max="${max}" step="${step}" value="${value}" class="w-16 shrink-0 rounded-lg border border-pl-line bg-pl-paper px-2 py-1 text-xs text-pl-ink outline-none focus:border-pl-gold">
   </div>`;
 }
 
@@ -287,17 +287,17 @@ function optRange(path: string, val: unknown, min: number, max: number, step: nu
 function colorField(label: string, path: string, current: string): string {
   return I.group(label,
     `<div class="flex items-center gap-2">
-      <input type="color" data-path="${path}" value="${esc(current)}" class="h-8 w-10 cursor-pointer rounded border border-neutral-300">
-      <input type="text" data-path="${path}" value="${esc(current)}" class="w-24 rounded-md border border-neutral-300 px-2 py-1 text-xs">
+      <input type="color" data-path="${path}" value="${esc(current)}" class="h-8 w-10 cursor-pointer rounded-lg border border-pl-line bg-pl-paper p-0.5">
+      <input type="text" data-path="${path}" value="${esc(current)}" class="w-24 rounded-lg border border-pl-line bg-pl-paper px-2 py-1 font-mono text-xs uppercase text-pl-ink outline-none focus:border-pl-gold">
     </div>`);
 }
 /** Collapsible properties group, like a panel section in a design tool. */
 function group(title: string, inner: string, open = false): string {
-  return `<details ${open ? "open" : ""} class="pl-group mb-2 overflow-hidden rounded-lg border border-neutral-200 bg-white">
-    <summary class="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 hover:bg-neutral-50">
-      ${esc(title)}<span class="pl-caret text-neutral-300 transition-transform">▾</span>
+  return `<details ${open ? "open" : ""} class="pl-group mb-2.5 overflow-hidden rounded-xl border border-pl-line bg-pl-paper">
+    <summary class="flex cursor-pointer list-none items-center justify-between px-3.5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-pl-ink-2 transition-colors hover:bg-pl-wash/40">
+      ${esc(title)}<span class="pl-caret text-pl-gold transition-transform">▾</span>
     </summary>
-    <div class="px-3 pb-3">${inner}</div>
+    <div class="px-3.5 pb-3.5 pt-1">${inner}</div>
   </details>`;
 }
 
@@ -343,7 +343,7 @@ function designHtml(key: SectionKey): string {
     ? I.group("Button style", selectEl(`${base}.buttonStyle`, d.buttonStyle ?? "solid", [["solid", "Solid"], ["outline", "Outline"], ["pill", "Pill"]]))
     : "";
 
-  return `<div class="mt-3 mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Style</div>`
+  return `<div class="mt-5 mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-pl-gold"><span class="h-px flex-1 bg-pl-line"></span>Style<span class="h-px flex-1 bg-pl-line"></span></div>`
     + group("Layout & spacing", layout, true)
     + group("Type", type)
     + group("Colour", color)
@@ -368,9 +368,20 @@ function emptySection(key: SectionKey): any {
   return base;
 }
 
+/** Tasteful monochrome line-glyphs (inherit currentColor), one per section. */
+const ICON_WRAP = (d: string) =>
+  `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true" class="h-[18px] w-[18px]">${d}</svg>`;
 const SECTION_ICON: Record<SectionKey, string> = {
-  pages: "📄", custom: "✚", hero: "◆", eventDetails: "❖", schedule: "🕑", location: "📍",
-  gallery: "🖼", rsvp: "✓", contact: "✉", faq: "?",
+  pages: ICON_WRAP(`<rect x="5" y="3" width="10" height="14" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 7h5M7.5 10h5M7.5 13h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`),
+  custom: ICON_WRAP(`<path d="M10 4.5v11M4.5 10h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`),
+  hero: ICON_WRAP(`<rect x="3.5" y="4" width="13" height="12" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M6.5 12.5 9 10l2 2 2-2.5 2.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.3" cy="7.6" r="1.1" stroke="currentColor" stroke-width="1.2"/>`),
+  eventDetails: ICON_WRAP(`<path d="M10 3 3.5 6.2v3.6c0 3.8 2.7 5.8 6.5 7.2 3.8-1.4 6.5-3.4 6.5-7.2V6.2L10 3Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M7.5 10l1.8 1.8 3.4-3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`),
+  schedule: ICON_WRAP(`<circle cx="10" cy="10" r="6.4" stroke="currentColor" stroke-width="1.4"/><path d="M10 6.5V10l2.4 1.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`),
+  location: ICON_WRAP(`<path d="M10 17s5-4.4 5-8a5 5 0 1 0-10 0c0 3.6 5 8 5 8Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="10" cy="9" r="1.7" stroke="currentColor" stroke-width="1.3"/>`),
+  gallery: ICON_WRAP(`<rect x="3.5" y="4.5" width="13" height="11" rx="1.6" stroke="currentColor" stroke-width="1.4"/><circle cx="7.4" cy="8.2" r="1.2" stroke="currentColor" stroke-width="1.2"/><path d="M4 13.5 8 10l2.6 2.6L13 10.5l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`),
+  rsvp: ICON_WRAP(`<rect x="3.5" y="5" width="13" height="10" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="m4.5 6.5 5.5 4 5.5-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`),
+  contact: ICON_WRAP(`<path d="M5.5 4.5h9c.6 0 1 .5 1 1.1v8.8c0 .6-.4 1.1-1 1.1h-9c-.6 0-1-.5-1-1.1V5.6c0-.6.4-1.1 1-1.1Z" stroke="currentColor" stroke-width="1.4"/><path d="M7 8h6M7 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`),
+  faq: ICON_WRAP(`<circle cx="10" cy="10" r="6.4" stroke="currentColor" stroke-width="1.4"/><path d="M8.4 8.2a1.6 1.6 0 1 1 2.4 1.4c-.6.4-.9.7-.9 1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="13.2" r=".55" fill="currentColor"/>`),
 };
 
 /**
@@ -393,10 +404,13 @@ function sectionsTab(): string {
       if (selected === "contact") body += wordingEditor("contact");
     }
     return `<div id="pl-controls">
-      <button data-action="sec-back" class="mb-3 inline-flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-900">← All sections</button>
-      <div class="mb-4 flex items-center gap-2">
-        <span class="grid h-8 w-8 place-items-center rounded-lg bg-neutral-900 text-sm text-white">${SECTION_ICON[selected]}</span>
-        <span class="text-base font-semibold text-neutral-900">${esc(schema.title)}</span>
+      <button data-action="sec-back" class="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-pl-ink-2 transition-colors hover:text-pl-gold">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="h-3.5 w-3.5"><path d="M10 3.5 5.5 8 10 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        All sections
+      </button>
+      <div class="mb-5 flex items-center gap-2.5">
+        <span class="grid h-9 w-9 place-items-center rounded-xl bg-pl-ink text-pl-gold-2">${SECTION_ICON[selected]}</span>
+        <span class="font-pl-display text-lg font-semibold text-pl-ink">${esc(schema.title)}</span>
       </div>
       ${body}${designHtml(selected)}
     </div>`;
@@ -408,14 +422,14 @@ function sectionsTab(): string {
     const exists = !!s;
     const on = exists && s!.enabled !== false;
     const name = SCHEMA_BY_KEY[key]?.title ?? key;
-    return `<div draggable="true" data-dnd="sections" data-i="${i}" class="group flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-2.5 ${on ? "" : "opacity-60"}">
-      <span data-handle title="Drag to reorder" class="cursor-grab select-none px-1 text-neutral-300 hover:text-neutral-600">⠿</span>
-      <span class="grid h-8 w-8 place-items-center rounded-lg bg-neutral-100 text-sm text-neutral-600">${SECTION_ICON[key]}</span>
-      <button data-action="sec-select" data-key="${key}" class="flex-1 truncate text-start text-sm font-medium text-neutral-800 ${exists ? "" : "italic text-neutral-400"}">${esc(name)}</button>
-      <button data-action="sec-toggle" data-key="${key}" title="Show / hide" class="rounded-md px-2 py-1 text-[11px] ${on ? "bg-green-100 text-green-700" : "bg-neutral-100 text-neutral-400"}">${exists ? (on ? "On" : "Off") : "Add"}</button>
+    return `<div draggable="true" data-dnd="sections" data-i="${i}" class="group flex items-center gap-2 rounded-xl border border-pl-line bg-pl-paper p-2.5 transition-shadow hover:border-pl-gold/40 hover:shadow-sm ${on ? "" : "opacity-55"}">
+      <span data-handle title="Drag to reorder" class="cursor-grab select-none px-1 text-pl-muted/60 hover:text-pl-ink-2">⠿</span>
+      <span class="grid h-8 w-8 place-items-center rounded-lg bg-pl-wash text-pl-gold">${SECTION_ICON[key]}</span>
+      <button data-action="sec-select" data-key="${key}" class="flex-1 truncate text-start text-sm font-medium text-pl-ink ${exists ? "" : "italic text-pl-muted"}">${esc(name)}</button>
+      <button data-action="sec-toggle" data-key="${key}" title="Show / hide" class="pl-chip ${on ? "bg-pl-sage/15 text-pl-sage" : "bg-pl-wash text-pl-muted"}">${exists ? (on ? "On" : "Off") : "Add"}</button>
     </div>`;
   }).join("");
-  return `<p class="mb-3 text-xs text-neutral-400">Click a section to edit it (or click it in the preview). Drag ⠿ to reorder.</p>
+  return `<p class="mb-3 text-xs leading-relaxed text-pl-muted">Click a section to edit it (or click it in the preview). Drag ⠿ to reorder.</p>
     <div data-dndlist="sections" class="space-y-2">${list}</div>`;
 }
 
@@ -433,18 +447,18 @@ function customEditor(): string {
         ${I.group("Text", I.area(`${base}.blocks.${i}.body`, b.body ?? ""))}
         ${I.group("Align", alignSel(i, b.align))}`;
     } else if (b.type === "image") {
-      const thumb = b.src ? `<img src="${esc(b.src)}" alt="" class="mb-2 h-24 w-full rounded-md border border-neutral-200 object-cover">` : `<div class="mb-2 flex h-24 w-full items-center justify-center rounded-md border border-dashed border-neutral-300 text-xs text-neutral-400">No image</div>`;
-      fields = `${I.group("Image", `${thumb}<div class="flex items-center gap-2"><input type="file" accept="image/*" data-file="${base}.blocks.${i}.src" class="block flex-1 text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white"><button type="button" data-action="pick-media" data-path="${base}.blocks.${i}.src" class="shrink-0 rounded-md border border-neutral-300 px-2.5 py-1.5 text-xs hover:bg-neutral-100">Library</button></div>`)}
+      const thumb = b.src ? `<img src="${esc(b.src)}" alt="" class="mb-2 h-24 w-full rounded-lg border border-pl-line object-cover">` : `<div class="mb-2 flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-pl-line bg-pl-wash/40 text-xs text-pl-muted">No image</div>`;
+      fields = `${I.group("Image", `${thumb}<div class="flex items-center gap-2"><input type="file" accept="image/*" data-file="${base}.blocks.${i}.src" class="block flex-1 text-xs text-pl-ink-2 file:mr-2 file:rounded-md file:border-0 file:bg-pl-ink file:px-3 file:py-1.5 file:text-pl-paper file:cursor-pointer hover:file:bg-pl-forest"><button type="button" data-action="pick-media" data-path="${base}.blocks.${i}.src" class="pl-btn-ghost shrink-0 px-2.5 py-1.5 text-xs ring-1 ring-pl-line">Library</button></div>`)}
         ${I.group("Align", alignSel(i, b.align))}`;
     } else {
       const n = (b.images ?? []).length;
-      fields = `${I.group("PDF", `<input type="file" accept="application/pdf,.pdf" data-pdf="${base}.blocks.${i}.images" class="block w-full text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white"><p class="mt-1 text-[11px] text-neutral-400">${n ? n + " page(s) loaded." : "Each page becomes a full-width image."}</p>`)}
+      fields = `${I.group("PDF", `<input type="file" accept="application/pdf,.pdf" data-pdf="${base}.blocks.${i}.images" class="block w-full text-xs text-pl-ink-2 file:mr-2 file:rounded-md file:border-0 file:bg-pl-ink file:px-3 file:py-1.5 file:text-pl-paper file:cursor-pointer hover:file:bg-pl-forest"><p class="mt-1.5 text-[11px] text-pl-muted">${n ? n + " page(s) loaded." : "Each page becomes a full-width image."}</p>`)}
         ${n ? I.group("Download-button text", I.input(`${base}.blocks.${i}.downloadLabel`, b.downloadLabel ?? "", "text", "Download (PDF)")) : ""}`;
     }
-    return `<div draggable="true" data-dnd="custom" data-i="${i}" class="mb-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+    return `<div draggable="true" data-dnd="custom" data-i="${i}" class="mb-3 rounded-xl border border-pl-line bg-pl-wash/30 p-3">
       <div class="mb-2 flex items-center justify-between">
-        <span data-handle class="cursor-grab select-none text-neutral-300 hover:text-neutral-600">⠿ <span class="text-xs font-semibold uppercase tracking-wide text-neutral-500">${b.type}</span></span>
-        <button data-action="cblock-del" data-i="${i}" class="rounded bg-red-50 px-2 py-1 text-xs text-red-600">✕</button>
+        <span data-handle class="inline-flex cursor-grab select-none items-center gap-1.5 text-pl-muted/60 hover:text-pl-ink-2">⠿ <span class="text-[11px] font-semibold uppercase tracking-wide text-pl-muted">${b.type}</span></span>
+        <button data-action="cblock-del" data-i="${i}" title="Remove block" class="rounded-md bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100">✕</button>
       </div>
       ${fields}
     </div>`;
@@ -452,12 +466,12 @@ function customEditor(): string {
 
   return `${I.group("Eyebrow (optional)", I.input(`${base}.eyebrow`, data.eyebrow ?? ""))}
     ${I.group("Section title (optional)", I.input(`${base}.title`, data.title ?? ""))}
-    <div class="mb-2 mt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Blocks (drag ⠿ to reorder)</div>
-    <div data-dndlist="custom">${rows || `<p class="rounded-lg border border-dashed border-neutral-300 p-4 text-center text-xs text-neutral-400">No blocks yet — add one below.</p>`}</div>
+    <div class="mb-2 mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-pl-muted">Blocks (drag ⠿ to reorder)</div>
+    <div data-dndlist="custom">${rows || `<p class="rounded-xl border border-dashed border-pl-line bg-pl-wash/30 p-4 text-center text-xs text-pl-muted">No blocks yet — add one below.</p>`}</div>
     <div class="mt-2 flex gap-2">
-      <button data-action="cblock-add" data-kind="text" class="flex-1 rounded-md border border-dashed border-neutral-300 py-2 text-xs hover:border-neutral-900">+ Text</button>
-      <button data-action="cblock-add" data-kind="image" class="flex-1 rounded-md border border-dashed border-neutral-300 py-2 text-xs hover:border-neutral-900">+ Image</button>
-      <button data-action="cblock-add" data-kind="pdf" class="flex-1 rounded-md border border-dashed border-neutral-300 py-2 text-xs hover:border-neutral-900">+ PDF</button>
+      <button data-action="cblock-add" data-kind="text" class="flex-1 rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ Text</button>
+      <button data-action="cblock-add" data-kind="image" class="flex-1 rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ Image</button>
+      <button data-action="cblock-add" data-kind="pdf" class="flex-1 rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ PDF</button>
     </div>`;
 }
 
@@ -483,15 +497,15 @@ function customFieldsEditor(): string {
     const isSelect = (f.type ?? "text") === "select";
     const optionsField = isSelect
       ? I.group("Choices (one per line)",
-          `<textarea data-path="${base}.${i}.options" data-lines rows="3" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900">${esc((f.options ?? []).join("\n"))}</textarea>`,
+          `<textarea data-path="${base}.${i}.options" data-lines rows="3" class="pl-input leading-relaxed">${esc((f.options ?? []).join("\n"))}</textarea>`,
           "Each line becomes one option in the guest's dropdown.")
       : "";
-    const reqToggle = `<label class="mb-1 flex cursor-pointer items-center gap-2 text-sm text-neutral-700">
-        <input type="checkbox" data-path="${base}.${i}.required"${f.required ? " checked" : ""} class="h-4 w-4 accent-neutral-900">Required</label>`;
-    return `<div draggable="true" data-dnd="cfields" data-i="${i}" class="mb-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+    const reqToggle = `<label class="mb-1 flex cursor-pointer items-center gap-2 text-sm text-pl-ink-2">
+        <input type="checkbox" data-path="${base}.${i}.required"${f.required ? " checked" : ""} class="h-4 w-4 accent-pl-gold">Required</label>`;
+    return `<div draggable="true" data-dnd="cfields" data-i="${i}" class="mb-3 rounded-xl border border-pl-line bg-pl-wash/30 p-3">
       <div class="mb-2 flex items-center justify-between">
-        <span data-handle class="cursor-grab select-none text-neutral-300 hover:text-neutral-600">⠿ <span class="text-xs font-semibold uppercase tracking-wide text-neutral-500">Question ${i + 1}</span></span>
-        <button data-action="cfield-del" data-i="${i}" class="rounded bg-red-50 px-2 py-1 text-xs text-red-600">✕</button>
+        <span data-handle class="inline-flex cursor-grab select-none items-center gap-1.5 text-pl-muted/60 hover:text-pl-ink-2">⠿ <span class="text-[11px] font-semibold uppercase tracking-wide text-pl-muted">Question ${i + 1}</span></span>
+        <button data-action="cfield-del" data-i="${i}" title="Remove question" class="rounded-md bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100">✕</button>
       </div>
       ${I.group("Question (also the CSV column)", I.input(`${base}.${i}.label`, f.label ?? ""), "Shown to the guest and used as the column header in your export.")}
       ${I.group("Answer type", typeSel(i, f.type))}
@@ -500,10 +514,10 @@ function customFieldsEditor(): string {
     </div>`;
   }).join("");
 
-  return `<div class="mt-5 mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Custom questions</div>
-    <p class="mb-2 text-[11px] text-neutral-400">Your own questions. Each answer becomes a column in this invitation's responses + CSV.</p>
-    <div data-dndlist="cfields">${rows || `<p class="rounded-lg border border-dashed border-neutral-300 p-4 text-center text-xs text-neutral-400">No custom questions yet.</p>`}</div>
-    <button data-action="cfield-add" class="mt-2 w-full rounded-md border border-dashed border-neutral-300 py-2 text-xs text-neutral-600 hover:border-neutral-900">+ Add question</button>`;
+  return `<div class="mt-6 mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-pl-muted">Custom questions</div>
+    <p class="mb-2.5 text-[11px] leading-relaxed text-pl-muted">Your own questions. Each answer becomes a column in this invitation's responses + CSV.</p>
+    <div data-dndlist="cfields">${rows || `<p class="rounded-xl border border-dashed border-pl-line bg-pl-wash/30 p-4 text-center text-xs text-pl-muted">No custom questions yet.</p>`}</div>
+    <button data-action="cfield-add" class="mt-2 w-full rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ Add question</button>`;
 }
 
 /**
@@ -563,18 +577,18 @@ function fontPickerButton(target: string, stack: string): string {
   const name = currentFontName(stack);
   ensureFontLoaded(name);
   const label = name || "Default";
-  return `<button data-fontpick="${target}" data-current="${esc(name)}" class="flex w-full items-center justify-between rounded-md border border-neutral-300 px-3 py-2 text-sm hover:border-neutral-900" style="font-family:${esc(stack || "inherit")}">
-    <span class="truncate">${esc(label)}</span><span class="ms-2 text-neutral-300">▾</span></button>`;
+  return `<button data-fontpick="${target}" data-current="${esc(name)}" class="flex w-full items-center justify-between rounded-lg border border-pl-line bg-pl-paper px-3 py-2 text-sm text-pl-ink transition-colors hover:border-pl-gold focus:border-pl-gold focus:outline-none focus:ring-2 focus:ring-pl-gold/25" style="font-family:${esc(stack || "inherit")}">
+    <span class="truncate">${esc(label)}</span><span class="ms-2 text-pl-gold">▾</span></button>`;
 }
 
 /** Open a searchable font picker; each row previews the font. Calls onPick(name). */
 function openFontPicker(currentName: string, onPick: (name: string) => void): void {
   const overlay = document.createElement("div");
-  overlay.className = "fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4";
-  overlay.innerHTML = `<div class="flex max-h-[80vh] w-full max-w-md flex-col rounded-2xl bg-white p-4 shadow-xl">
-    <div class="mb-2 flex items-center justify-between"><h3 class="font-semibold">Choose a font</h3>
-      <button data-close class="rounded px-2 py-1 text-sm text-neutral-500 hover:bg-neutral-100">Close</button></div>
-    <input data-search type="text" placeholder="Search ${FONTS.length}+ fonts…" class="mb-3 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">
+  overlay.className = "fixed inset-0 z-[70] flex items-center justify-center bg-pl-ink/55 p-4 backdrop-blur-sm";
+  overlay.innerHTML = `<div class="pl-card flex max-h-[80vh] w-full max-w-md flex-col p-4">
+    <div class="mb-3 flex items-center justify-between"><h3 class="font-pl-display text-lg font-semibold text-pl-ink">Choose a font</h3>
+      <button data-close class="pl-btn-ghost px-2.5 py-1 text-sm">Close</button></div>
+    <input data-search type="text" placeholder="Search ${FONTS.length}+ fonts…" class="pl-input mb-3">
     <div data-list class="-mx-1 flex-1 overflow-y-auto"></div>
   </div>`;
   document.body.appendChild(overlay);
@@ -592,8 +606,8 @@ function openFontPicker(currentName: string, onPick: (name: string) => void): vo
     obs.disconnect();
     const items = FONTS.filter((f) => f.name.toLowerCase().includes(q.toLowerCase()));
     list.innerHTML = items.map((f) =>
-      `<button data-font="${esc(f.name)}" class="block w-full rounded-md px-3 py-2 text-start text-base hover:bg-neutral-100 ${f.name === currentName ? "bg-neutral-100 font-semibold" : ""}" style="font-family:'${esc(f.name)}', ${f.category === "serif" || f.category === "display" ? "serif" : f.category === "handwriting" ? "cursive" : f.category === "monospace" ? "monospace" : "sans-serif"}">${esc(f.name)}</button>`,
-    ).join("") || `<p class="px-3 py-4 text-sm text-neutral-400">No fonts match.</p>`;
+      `<button data-font="${esc(f.name)}" class="block w-full rounded-lg px-3 py-2 text-start text-base text-pl-ink transition-colors hover:bg-pl-wash/60 ${f.name === currentName ? "bg-pl-wash font-semibold ring-1 ring-pl-gold/30" : ""}" style="font-family:'${esc(f.name)}', ${f.category === "serif" || f.category === "display" ? "serif" : f.category === "handwriting" ? "cursive" : f.category === "monospace" ? "monospace" : "sans-serif"}">${esc(f.name)}</button>`,
+    ).join("") || `<p class="px-3 py-4 text-sm text-pl-muted">No fonts match.</p>`;
     list.querySelectorAll<HTMLElement>("[data-font]").forEach((el) => obs.observe(el));
   };
   draw("");
@@ -623,25 +637,25 @@ function applyFontPick(target: string, name: string): void {
 function themeTab(): string {
   const c = state.theme.colors;
   const colorRow = (key: keyof typeof c, label: string) =>
-    `<div class="mb-3 flex items-center gap-3">
-      <input type="color" data-path="theme.colors.${key}" value="${esc(c[key])}" class="h-9 w-12 cursor-pointer rounded border border-neutral-300">
-      <span class="flex-1 text-sm text-neutral-700">${esc(label)}</span>
-      <input type="text" data-path="theme.colors.${key}" value="${esc(c[key])}" class="w-24 rounded-md border border-neutral-300 px-2 py-1 text-xs">
+    `<div class="mb-2.5 flex items-center gap-3">
+      <input type="color" data-path="theme.colors.${key}" value="${esc(c[key])}" class="h-9 w-11 cursor-pointer rounded-lg border border-pl-line bg-pl-paper p-0.5">
+      <span class="flex-1 text-sm text-pl-ink-2">${esc(label)}</span>
+      <input type="text" data-path="theme.colors.${key}" value="${esc(c[key])}" class="w-24 rounded-lg border border-pl-line bg-pl-paper px-2 py-1 font-mono text-xs uppercase text-pl-ink outline-none focus:border-pl-gold">
     </div>`;
   const bgv: any = state.content.background ?? {};
   const bgThumb = bgv.image
-    ? `<img src="${esc(bgv.image)}" alt="" class="mb-2 h-20 w-full rounded object-cover border border-neutral-200">`
-    : `<div class="mb-2 flex h-20 w-full items-center justify-center rounded border border-dashed border-neutral-300 text-xs text-neutral-400">No background</div>`;
-  return `<div class="text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Colours (hex)</div>
+    ? `<img src="${esc(bgv.image)}" alt="" class="mb-2 h-20 w-full rounded-lg object-cover border border-pl-line">`
+    : `<div class="mb-2 flex h-20 w-full items-center justify-center rounded-lg border border-dashed border-pl-line bg-pl-wash/40 text-xs text-pl-muted">No background</div>`;
+  return `<div class="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-pl-gold"><span>Colours (hex)</span><span class="h-px flex-1 bg-pl-line"></span></div>
     ${colorRow("primary", "Primary (headings, buttons)")}${colorRow("accent", "Accent (gold/details)")}
     ${colorRow("bg", "Page background")}${colorRow("surface", "Cards / panels")}
     ${colorRow("ink", "Body text")}${colorRow("muted", "Muted text")}${colorRow("line", "Lines / borders")}
-    <div class="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Fonts (${FONTS.length}+, previewed in their own typeface)</div>
+    <div class="mb-3 mt-6 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-pl-gold"><span>Fonts (${FONTS.length}+)</span><span class="h-px flex-1 bg-pl-line"></span></div>
     ${I.group("Heading font", fontPickerButton("theme:heading", state.theme.fonts.heading))}
     ${I.group("Body font", fontPickerButton("theme:body", state.theme.fonts.body))}
-    <div class="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Whole-page background</div>
-    <p class="-mt-2 mb-3 text-[11px] text-neutral-400">Sits behind every section. Set sections to "Transparent" (Layout) to let it flow through.</p>
-    ${I.group("Background image", `${bgThumb}<input type="file" accept="image/*" data-file="content.background.image" class="block w-full text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white">`)}
+    <div class="mb-3 mt-6 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-pl-gold"><span>Whole-page background</span><span class="h-px flex-1 bg-pl-line"></span></div>
+    <p class="-mt-1 mb-3 text-[11px] leading-relaxed text-pl-muted">Sits behind every section. Set sections to "Transparent" (Layout) to let it flow through.</p>
+    ${I.group("Background image", `${bgThumb}<input type="file" accept="image/*" data-file="content.background.image" class="block w-full text-xs text-pl-ink-2 file:mr-2 file:rounded-md file:border-0 file:bg-pl-ink file:px-3 file:py-1.5 file:text-pl-paper file:cursor-pointer hover:file:bg-pl-forest">`)}
     ${I.group("…or a pattern", selectEl("content.background.pattern", bgv.pattern ?? "none", [["none", "None"], ["dots", "Dots"], ["grid", "Grid"]]))}
     ${I.group("Darken background", optRange("content.background.scrim", bgv.scrim, 0, 0.85, 0.05, 0))}
     ${I.group("Image fit", selectEl("content.background.size", bgv.size ?? "cover", [["cover", "Cover"], ["contain", "Contain"], ["repeat", "Tile"]]))}`;
@@ -649,22 +663,22 @@ function themeTab(): string {
 
 function settingsTab(): string {
   const m = state.content.meta;
-  const navRows = (state.content.nav ?? []).map((n, i) => `<div class="mb-3 rounded-md border border-neutral-200 p-3">
-    <div class="mb-2 flex items-center justify-between"><span class="text-xs font-semibold text-neutral-500">Menu item ${i + 1}</span>
-      <span class="flex gap-1"><button data-action="list-up" data-path="content.nav.${i}" class="rounded bg-neutral-100 px-2 py-1 text-xs">↑</button>
-      <button data-action="list-down" data-path="content.nav.${i}" class="rounded bg-neutral-100 px-2 py-1 text-xs">↓</button>
-      <button data-action="list-del" data-path="content.nav.${i}" class="rounded bg-red-50 px-2 py-1 text-xs text-red-600">✕</button></span></div>
+  const navRows = (state.content.nav ?? []).map((n, i) => `<div class="mb-3 rounded-xl border border-pl-line bg-pl-paper p-3">
+    <div class="mb-2 flex items-center justify-between"><span class="text-[11px] font-semibold uppercase tracking-wide text-pl-muted">Menu item ${i + 1}</span>
+      <span class="flex gap-1"><button data-action="list-up" data-path="content.nav.${i}" title="Move up" class="rounded-md bg-pl-wash px-2 py-1 text-xs text-pl-ink-2 hover:bg-pl-gold/20">↑</button>
+      <button data-action="list-down" data-path="content.nav.${i}" title="Move down" class="rounded-md bg-pl-wash px-2 py-1 text-xs text-pl-ink-2 hover:bg-pl-gold/20">↓</button>
+      <button data-action="list-del" data-path="content.nav.${i}" title="Remove" class="rounded-md bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100">✕</button></span></div>
     ${I.group("Text", I.input(`content.nav.${i}.label`, n.label))}
     ${I.group("Goes to", linkTargetSelect(`content.nav.${i}.href`, n.href))}
     ${I.group("…or a custom link", I.input(`content.nav.${i}.href`, n.href))}</div>`).join("");
-  return `<div class="text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Site</div>
+  return `<div class="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-pl-gold"><span>Site</span><span class="h-px flex-1 bg-pl-line"></span></div>
     ${I.group("Site name", I.input("content.meta.title", m.title))}
     ${I.group("Description", I.area("content.meta.description", m.description ?? ""))}
     ${I.group("Language", selectEl("content.language", state.content.language, [["en", "English"], ["he", "Hebrew (עברית)"], ["fr", "French (Français)"]]))}
     ${I.group("Direction", selectEl("content.direction", state.content.direction, [["ltr", "Left → Right"], ["rtl", "Right → Left (Hebrew)"]]))}
-    <div class="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Navigation menu</div>${navRows}
-    <button data-action="list-add" data-path="content.nav" class="w-full rounded-md border border-dashed border-neutral-300 py-2 text-xs text-neutral-600 hover:border-neutral-900">+ Add menu item</button>
-    <div class="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Footer</div>
+    <div class="mb-3 mt-6 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-pl-gold"><span>Navigation menu</span><span class="h-px flex-1 bg-pl-line"></span></div>${navRows}
+    <button data-action="list-add" data-path="content.nav" class="w-full rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ Add menu item</button>
+    <div class="mb-3 mt-6 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-pl-gold"><span>Footer</span><span class="h-px flex-1 bg-pl-line"></span></div>
     ${I.group("Footer message", I.input("content.footer.message", state.content.footer?.message ?? ""))}
     ${I.group("Credit line", I.input("content.footer.credit", state.content.footer?.credit ?? ""))}`;
 }
@@ -679,19 +693,16 @@ function renderPanel(): void {
   const panel = document.getElementById("pl-panel");
   if (!panel) return;
   const body = tab === "sections" ? sectionsTab() : tab === "theme" ? themeTab() : settingsTab();
-  panel.innerHTML = `<div class="sticky top-0 z-10 border-b border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur">
-      <h2 class="text-sm font-semibold text-neutral-900">${TAB_TITLE[tab]}</h2></div>
+  panel.innerHTML = `<div class="sticky top-0 z-10 border-b border-pl-line bg-pl-paper/95 px-4 py-3 backdrop-blur">
+      <h2 class="font-pl-display text-base font-semibold tracking-tight text-pl-ink">${TAB_TITLE[tab]}</h2></div>
     <div class="p-4">${body}</div>`;
   updateRail();
 }
 
-/** Highlight the active tab in the left icon rail. */
+/** Highlight the active tab in the left icon rail (gold pill via .pl-rail-active). */
 function updateRail(): void {
   document.querySelectorAll<HTMLElement>("[data-rail]").forEach((b) => {
-    const on = b.getAttribute("data-rail") === tab;
-    b.classList.toggle("bg-neutral-800", on);
-    b.classList.toggle("text-white", on);
-    b.classList.toggle("text-neutral-400", !on);
+    b.classList.toggle("pl-rail-active", b.getAttribute("data-rail") === tab);
   });
 }
 
@@ -710,7 +721,7 @@ function markDirty(): void {
   dirty = true;
   recordHistory();
   const s = document.getElementById("pl-status");
-  if (s) { s.textContent = "Unsaved changes"; s.className = "text-xs text-amber-300"; }
+  if (s) { s.textContent = "Unsaved changes"; s.className = "ms-auto inline-flex items-center gap-1.5 text-xs text-pl-gold-2"; }
 }
 
 /** Move an item within a drag group ("sections" → order, "custom" → blocks). */
@@ -890,11 +901,11 @@ async function handlePdfUpload(file: File, path: string): Promise<void> {
 /** Open the media library in a modal and set the chosen image at `path`. */
 async function pickFromLibrary(path: string): Promise<void> {
   const overlay = document.createElement("div");
-  overlay.className = "fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4";
-  overlay.innerHTML = `<div class="flex max-h-[80vh] w-full max-w-3xl flex-col rounded-2xl bg-white p-5 shadow-xl">
-    <div class="mb-3 flex items-center justify-between"><h3 class="font-semibold">Media library</h3>
-      <button data-close class="rounded px-2 py-1 text-sm text-neutral-500 hover:bg-neutral-100">Close</button></div>
-    <div data-grid class="grid grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4"><p class="text-sm text-neutral-400">Loading…</p></div>
+  overlay.className = "fixed inset-0 z-[60] flex items-center justify-center bg-pl-ink/55 p-4 backdrop-blur-sm";
+  overlay.innerHTML = `<div class="pl-card flex max-h-[80vh] w-full max-w-3xl flex-col p-5">
+    <div class="mb-3 flex items-center justify-between"><h3 class="font-pl-display text-lg font-semibold text-pl-ink">Media library</h3>
+      <button data-close class="pl-btn-ghost px-2.5 py-1 text-sm">Close</button></div>
+    <div data-grid class="grid grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4"><p class="text-sm text-pl-muted">Loading…</p></div>
   </div>`;
   document.body.appendChild(overlay);
   const close = () => overlay.remove();
@@ -905,8 +916,8 @@ async function pickFromLibrary(path: string): Promise<void> {
   if (!res.ok) { grid.innerHTML = `<p class="text-sm text-red-600">Couldn't load library.</p>`; return; }
   const items = (await res.json()) as { url: string; name: string | null }[];
   grid.innerHTML = items.length
-    ? items.map((m) => `<button data-url="${esc(m.url)}" class="overflow-hidden rounded-lg border border-neutral-200 hover:ring-2 hover:ring-neutral-900"><img src="${esc(m.url)}" alt="${esc(m.name ?? "")}" class="aspect-square w-full object-cover"></button>`).join("")
-    : `<p class="text-sm text-neutral-400">No media yet — upload from here or the Media library page.</p>`;
+    ? items.map((m) => `<button data-url="${esc(m.url)}" class="overflow-hidden rounded-lg border border-pl-line transition hover:ring-2 hover:ring-pl-gold"><img src="${esc(m.url)}" alt="${esc(m.name ?? "")}" class="aspect-square w-full object-cover"></button>`).join("")
+    : `<p class="text-sm text-pl-muted">No media yet — upload from here or the Media library page.</p>`;
   grid.addEventListener("click", (e) => {
     const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-url]");
     if (!btn) return;
@@ -919,17 +930,17 @@ async function pickFromLibrary(path: string): Promise<void> {
 /** Manage the media library WITHOUT leaving the editor (upload / copy / delete). */
 async function openMediaManager(): Promise<void> {
   const overlay = document.createElement("div");
-  overlay.className = "fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4";
-  overlay.innerHTML = `<div class="flex max-h-[82vh] w-full max-w-3xl flex-col rounded-2xl bg-white p-5 shadow-xl">
+  overlay.className = "fixed inset-0 z-[60] flex items-center justify-center bg-pl-ink/55 p-4 backdrop-blur-sm";
+  overlay.innerHTML = `<div class="pl-card flex max-h-[82vh] w-full max-w-3xl flex-col p-5">
     <div class="mb-3 flex items-center justify-between">
-      <h3 class="font-semibold">Media library</h3>
+      <h3 class="font-pl-display text-lg font-semibold text-pl-ink">Media library</h3>
       <span class="flex items-center gap-2">
-        <label class="cursor-pointer rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-neutral-700">+ Upload<input data-up type="file" accept="image/*" multiple class="hidden"></label>
-        <button data-close class="rounded px-2 py-1 text-sm text-neutral-500 hover:bg-neutral-100">Close</button>
+        <label class="pl-btn-gold cursor-pointer px-3 py-1.5 text-xs font-semibold">+ Upload<input data-up type="file" accept="image/*" multiple class="hidden"></label>
+        <button data-close class="pl-btn-ghost px-2.5 py-1 text-sm">Close</button>
       </span>
     </div>
-    <p data-status class="mb-2 text-xs text-neutral-500"></p>
-    <div data-grid class="grid grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4"><p class="text-sm text-neutral-400">Loading…</p></div>
+    <p data-status class="mb-2 text-xs text-pl-ink-2"></p>
+    <div data-grid class="grid grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4"><p class="text-sm text-pl-muted">Loading…</p></div>
   </div>`;
   document.body.appendChild(overlay);
   const close = () => overlay.remove();
@@ -941,13 +952,13 @@ async function openMediaManager(): Promise<void> {
     if (!res.ok) { grid.innerHTML = `<p class="text-sm text-red-600">Couldn't load library.</p>`; return; }
     const items = (await res.json()) as { url: string; key: string; name: string | null }[];
     grid.innerHTML = items.length
-      ? items.map((m) => `<figure class="group relative overflow-hidden rounded-lg border border-neutral-200">
+      ? items.map((m) => `<figure class="group relative overflow-hidden rounded-lg border border-pl-line">
           <img src="${esc(m.url)}" alt="${esc(m.name ?? "")}" class="aspect-square w-full object-cover">
           <div class="absolute inset-x-0 top-0 flex justify-end gap-1 p-1 opacity-0 transition group-hover:opacity-100">
-            <button data-copy="${esc(m.url)}" class="rounded bg-white/90 px-2 py-0.5 text-[11px] shadow">Copy</button>
-            <button data-del="${esc(m.key)}" class="rounded bg-red-600/90 px-2 py-0.5 text-[11px] text-white shadow">✕</button>
+            <button data-copy="${esc(m.url)}" class="rounded-md bg-pl-paper/95 px-2 py-0.5 text-[11px] font-medium text-pl-ink-2 shadow-sm hover:text-pl-gold">Copy</button>
+            <button data-del="${esc(m.key)}" class="rounded-md bg-red-600/90 px-2 py-0.5 text-[11px] text-white shadow-sm hover:bg-red-600">✕</button>
           </div></figure>`).join("")
-      : `<p class="text-sm text-neutral-400">No media yet — upload above.</p>`;
+      : `<p class="text-sm text-pl-muted">No media yet — upload above.</p>`;
   };
 
   overlay.addEventListener("click", async (e) => {
@@ -977,7 +988,7 @@ async function openMediaManager(): Promise<void> {
 
 function setStatus(msg: string, error = false): void {
   const s = document.getElementById("pl-status");
-  if (s) { s.textContent = msg; s.className = "text-xs " + (error ? "text-red-300" : "text-neutral-300"); }
+  if (s) { s.textContent = msg; s.className = "ms-auto inline-flex items-center gap-1.5 text-xs " + (error ? "text-red-300" : "text-pl-paper/65"); }
 }
 
 async function save(): Promise<void> {
