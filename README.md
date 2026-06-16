@@ -64,11 +64,10 @@ npm install
 npm run dev
 
 # FULL app with database, image storage and the rendering Function:
-npm run db:migrate:local      # set up the local D1 once
-echo 'ADMIN_PASSWORD = "dev"' > .dev.vars
-npm run dev:cf                 # builds, then serves at http://localhost:8788
+npm run dev:cf                 # builds + serves with a local D1 + R2 (password: dev)
 ```
 
+The database tables are created automatically on first use — no migration step.
 Then open `http://localhost:8788/admin` (password: `dev`), click **+ New site**,
 edit it, and **Publish**. Preview any site at `http://localhost:8788/s/<slug>`.
 
@@ -76,20 +75,21 @@ edit it, and **Publish**. Preview any site at `http://localhost:8788/s/<slug>`.
 
 ## Deploy to Cloudflare
 
-1. **Push to GitHub** and create a Pages project (Workers & Pages → Create →
-   Pages → Connect to Git). Build command `npm run build`, output dir `dist`.
-2. **Create the database** and apply the schema:
-   ```bash
-   npx wrangler d1 create paperly-rsvp        # paste the id into wrangler.toml
-   npm run db:migrate                         # creates the sites + submissions tables
-   ```
-3. **Create the image bucket:** `npx wrangler r2 bucket create paperly-media`.
-4. **Bind them in the dashboard** (Settings → Functions): D1 binding **`DB`** →
-   `paperly-rsvp`, R2 binding **`MEDIA`** → `paperly-media`.
+All bindings are managed in the **Cloudflare dashboard** (there is no
+`wrangler.toml`), and the database tables are created automatically on first use.
+
+1. **Create a Pages project** (Workers & Pages → Create → **Pages** → Connect to
+   Git). Build command `npm run build`, build output directory `dist`.
+2. **Create the database:** Storage & Databases → D1 → **Create** →
+   name it `paperly-rsvp`. (No migration needed — tables auto-create.)
+3. **Create the image bucket:** R2 → **Create bucket** → name it `paperly-media`.
+4. **Bind them** in the Pages project → Settings → Functions:
+   D1 binding **`DB`** → `paperly-rsvp`; R2 binding **`MEDIA`** → `paperly-media`.
 5. **Set environment variables** (Settings → Environment variables):
    `ADMIN_PASSWORD`, and for production spam protection
    `PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY`.
-6. Deploy. Your control panel is at `https://<your-app>.pages.dev/admin`.
+6. **Re-deploy** (Deployments → Retry deployment). Your control panel is at
+   `https://<your-app>.pages.dev/admin`.
 
 ### Custom domains (one per client)
 
@@ -150,7 +150,6 @@ Paused/archived sites show a "coming soon" page instead.
 | `npm run dev` | Operator pages only (no DB) |
 | `npm run dev:cf` | Full app: build + wrangler + local D1 + R2 |
 | `npm run build` | Compile `/site.css` + build the static pages |
-| `npm run db:migrate` / `:local` | Apply D1 migrations (remote / local) |
 | `npm run check` | Type-check the project |
 
 ---

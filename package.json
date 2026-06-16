@@ -12,9 +12,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "dev:cf": "npm run build && wrangler pages dev dist",
-    "db:migrate:local": "wrangler d1 migrations apply paperly-rsvp --local",
-    "db:migrate": "wrangler d1 migrations apply paperly-rsvp --remote",
+    "dev:cf": "npm run build && wrangler pages dev dist --d1 DB --r2 MEDIA --binding ADMIN_PASSWORD=dev",
     "pages:dev": "npm run dev:cf"
   },
   "dependencies": {
