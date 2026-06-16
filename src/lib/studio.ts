@@ -180,9 +180,14 @@ function applySelectionOutline(): void {
 
 // --- field builders --------------------------------------------------------
 
+/** A small "?" bubble with a hover explanation (native title tooltip). */
+function helpDot(text?: string): string {
+  return text ? ` <span class="pl-help" title="${esc(text)}">?</span>` : "";
+}
+
 const I = {
-  group: (label: string, inner: string) =>
-    `<div class="mb-4"><label class="mb-1.5 block text-xs font-medium text-neutral-500">${esc(label)}</label>${inner}</div>`,
+  group: (label: string, inner: string, help?: string) =>
+    `<div class="mb-4"><label class="mb-1.5 flex items-center text-xs font-medium text-neutral-500">${esc(label)}${helpDot(help)}</label>${inner}</div>`,
   input: (path: string, value: string, type = "text") =>
     `<input type="${type}" data-path="${path}" value="${esc(value)}" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900">`,
   area: (path: string, value: string) =>
@@ -191,20 +196,27 @@ const I = {
 
 function fieldHtml(field: Field, base: string, value: any): string {
   const path = `${base}.${field.key}`;
+  const help = (field as any).help as string | undefined;
   switch (field.kind) {
-    case "text": return I.group(field.label, I.input(path, value ?? ""));
-    case "textarea": return I.group(field.label, I.area(path, value ?? ""));
+    case "text": return I.group(field.label, I.input(path, value ?? ""), help);
+    case "textarea": return I.group(field.label, I.area(path, value ?? ""), help);
     case "number":
       return I.group(`${field.label} (${value ?? 0})`,
-        `<input type="range" data-path="${path}" min="${field.min ?? 0}" max="${field.max ?? 1}" step="${field.step ?? 0.1}" value="${value ?? 0}" class="w-full">`);
+        `<div class="flex items-center gap-2"><input type="range" data-path="${path}" min="${field.min ?? 0}" max="${field.max ?? 1}" step="${field.step ?? 0.1}" value="${value ?? 0}" class="w-full">
+        <input type="number" data-path="${path}" min="${field.min ?? 0}" max="${field.max ?? 1}" step="${field.step ?? 0.1}" value="${value ?? 0}" class="w-16 shrink-0 rounded-md border border-neutral-300 px-2 py-1 text-xs"></div>`, help);
+    case "toggle": {
+      const on = value !== false; // default ON
+      return `<label class="mb-3 flex cursor-pointer items-center gap-2 text-sm text-neutral-700">
+        <input type="checkbox" data-path="${path}"${on ? " checked" : ""} class="h-4 w-4 accent-neutral-900">${esc(field.label)}${helpDot(help)}</label>`;
+    }
     case "datetime":
       return I.group(field.label,
-        `<input type="datetime-local" data-path="${path}" value="${esc(value ?? "")}" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">`);
+        `<input type="datetime-local" data-path="${path}" value="${esc(value ?? "")}" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">`, help);
     case "pdf": {
       const count = Array.isArray(value) ? value.length : 0;
       return I.group(field.label,
         `<input type="file" accept="application/pdf,.pdf" data-pdf="${path}" class="block w-full text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white">
-        <p class="mt-1 text-[11px] text-neutral-400">Each page becomes a full-width image. ${count ? count + " page(s) loaded — manage them under Pages below." : "The original PDF is kept for a download button."}</p>`);
+        <p class="mt-1 text-[11px] text-neutral-400">Each page becomes a full-width image. ${count ? count + " page(s) loaded — manage them under Pages below." : "The original PDF is kept for a download button."}</p>`, help);
     }
     case "image": {
       const thumb = value
@@ -216,7 +228,7 @@ function fieldHtml(field: Field, base: string, value: any): string {
           <input type="file" accept="image/*" data-file="${path}" class="block flex-1 text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white">
           <button type="button" data-action="pick-media" data-path="${path}" class="shrink-0 rounded-md border border-neutral-300 px-2.5 py-1.5 text-xs hover:bg-neutral-100">Library</button>
         </div>
-        <p class="mt-1 text-[11px] text-neutral-400">Uploaded full-resolution (HD), saved to your media library.</p>`);
+        <p class="mt-1 text-[11px] text-neutral-400">Uploaded full-resolution (HD), saved to your media library.</p>`, help);
     }
     case "link": {
       const v = value ?? {};
@@ -237,7 +249,7 @@ function fieldHtml(field: Field, base: string, value: any): string {
             </span></div>
           ${field.item.map((f) => fieldHtml(f, `${path}.${i}`, item?.[f.key])).join("")}
         </div>`).join("");
-      return `<div class="mb-4"><label class="mb-1.5 block text-xs font-medium text-neutral-500">${esc(field.label)}</label>${rows}
+      return `<div class="mb-4"><label class="mb-1.5 flex items-center text-xs font-medium text-neutral-500">${esc(field.label)}${helpDot(help)}</label>${rows}
         <button data-action="list-add" data-path="${path}" class="w-full rounded-md border border-dashed border-neutral-300 py-2 text-xs text-neutral-600 hover:border-neutral-900">+ Add ${esc(field.itemLabel)}</button></div>`;
     }
   }
@@ -800,6 +812,63 @@ async function pickFromLibrary(path: string): Promise<void> {
   });
 }
 
+/** Manage the media library WITHOUT leaving the editor (upload / copy / delete). */
+async function openMediaManager(): Promise<void> {
+  const overlay = document.createElement("div");
+  overlay.className = "fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4";
+  overlay.innerHTML = `<div class="flex max-h-[82vh] w-full max-w-3xl flex-col rounded-2xl bg-white p-5 shadow-xl">
+    <div class="mb-3 flex items-center justify-between">
+      <h3 class="font-semibold">Media library</h3>
+      <span class="flex items-center gap-2">
+        <label class="cursor-pointer rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-neutral-700">+ Upload<input data-up type="file" accept="image/*" multiple class="hidden"></label>
+        <button data-close class="rounded px-2 py-1 text-sm text-neutral-500 hover:bg-neutral-100">Close</button>
+      </span>
+    </div>
+    <p data-status class="mb-2 text-xs text-neutral-500"></p>
+    <div data-grid class="grid grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4"><p class="text-sm text-neutral-400">Loading…</p></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  const grid = overlay.querySelector("[data-grid]") as HTMLElement;
+  const status = overlay.querySelector("[data-status]") as HTMLElement;
+
+  const load = async () => {
+    const res = await fetch("/api/media", { headers: authHeaders() });
+    if (!res.ok) { grid.innerHTML = `<p class="text-sm text-red-600">Couldn't load library.</p>`; return; }
+    const items = (await res.json()) as { url: string; key: string; name: string | null }[];
+    grid.innerHTML = items.length
+      ? items.map((m) => `<figure class="group relative overflow-hidden rounded-lg border border-neutral-200">
+          <img src="${esc(m.url)}" alt="${esc(m.name ?? "")}" class="aspect-square w-full object-cover">
+          <div class="absolute inset-x-0 top-0 flex justify-end gap-1 p-1 opacity-0 transition group-hover:opacity-100">
+            <button data-copy="${esc(m.url)}" class="rounded bg-white/90 px-2 py-0.5 text-[11px] shadow">Copy</button>
+            <button data-del="${esc(m.key)}" class="rounded bg-red-600/90 px-2 py-0.5 text-[11px] text-white shadow">✕</button>
+          </div></figure>`).join("")
+      : `<p class="text-sm text-neutral-400">No media yet — upload above.</p>`;
+  };
+
+  overlay.addEventListener("click", async (e) => {
+    const t = e.target as HTMLElement;
+    if (t === overlay || t.hasAttribute("data-close")) { close(); return; }
+    const copy = t.getAttribute("data-copy");
+    const del = t.getAttribute("data-del");
+    if (copy) { navigator.clipboard?.writeText(new URL(copy, location.origin).toString()); t.textContent = "Copied"; setTimeout(() => (t.textContent = "Copy"), 1000); }
+    else if (del) { if (confirm("Delete from library?")) { await fetch(`/api/media?key=${encodeURIComponent(del)}`, { method: "DELETE", headers: authHeaders() }); await load(); } }
+  });
+  (overlay.querySelector("[data-up]") as HTMLInputElement).addEventListener("change", async (e) => {
+    const files = (e.target as HTMLInputElement).files;
+    if (!files?.length) return;
+    for (let i = 0; i < files.length; i++) {
+      status.textContent = `Uploading ${i + 1}/${files.length}…`;
+      const { blob, name } = await optimizeImage(files[i]);
+      const fd = new FormData(); fd.append("file", blob, name); fd.append("slug", "library");
+      await fetch("/api/upload", { method: "POST", headers: authHeaders(), body: fd });
+    }
+    status.textContent = "";
+    await load();
+  });
+  load();
+}
+
 // --- save / load -----------------------------------------------------------
 
 function setStatus(msg: string, error = false): void {
@@ -852,6 +921,8 @@ export async function initStudio(): Promise<void> {
     b.addEventListener("click", () => { tab = b.getAttribute("data-rail") as typeof tab; renderPanel(); }),
   );
   updateRail();
+  // Media opens inside the editor (no navigating away).
+  document.getElementById("pl-media")?.addEventListener("click", () => void openMediaManager());
 
   // Undo / redo (buttons + keyboard).
   document.getElementById("pl-undo")?.addEventListener("click", undo);
@@ -889,6 +960,11 @@ export async function initStudio(): Promise<void> {
     if (pdfPath) {
       const file = (t as HTMLInputElement).files?.[0];
       if (file) await handlePdfUpload(file, pdfPath);
+      return;
+    }
+    if ((t as HTMLInputElement).type === "checkbox" && t.getAttribute("data-path")) {
+      setByPath(state, t.getAttribute("data-path")!, (t as HTMLInputElement).checked);
+      markDirty(); renderPreviewNow();
       return;
     }
     if (t.tagName === "SELECT" && t.getAttribute("data-path")) {

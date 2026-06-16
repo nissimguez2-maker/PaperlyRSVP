@@ -42,6 +42,11 @@
 
       /* Rail buttons */
       .pl-rail-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 6px; border-radius:12px; font-size:10px; }
+
+      /* "?" help bubble (hover shows the native tooltip) */
+      .pl-help { display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; margin-inline-start:6px;
+        border-radius:9999px; background:#e5e5e5; color:#555; font-size:10px; font-weight:700; cursor:help; }
+      .pl-help:hover { background:#111; color:#fff; }
     </style>
   </head>
   <body>
@@ -65,7 +70,7 @@
           <button data-rail="sections" class="pl-rail-btn hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">▤</span>Sections</button>
           <button data-rail="theme" class="pl-rail-btn hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">🎨</span>Theme</button>
           <button data-rail="settings" class="pl-rail-btn hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">⚙</span>Settings</button>
-          <a href="/admin/media" class="pl-rail-btn mt-1 text-neutral-400 hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">🖼</span>Media</a>
+          <button id="pl-media" class="pl-rail-btn mt-1 text-neutral-400 hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">🖼</span>Media</button>
         </nav>
 
         <!-- Properties panel -->

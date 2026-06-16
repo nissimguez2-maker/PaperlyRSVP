@@ -110,7 +110,7 @@ export function starterContent(slug: string, o: TemplateOptions): SiteContent {
       },
       rsvp: {
         enabled: true, eyebrow: L.eyebrow, title: t("RSVP", "אישור הגעה"),
-        body: L.body, deadlineNote: L.deadline, labels: {},
+        body: L.body, deadlineNote: L.deadline, labels: {}, maxGuests: 6,
       },
       contact: {
         enabled: !pdf, eyebrow: L.eyebrow, title: t("Contact", "צרו קשר"),

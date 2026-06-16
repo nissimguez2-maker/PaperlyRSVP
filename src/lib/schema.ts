@@ -8,15 +8,17 @@
  */
 import type { SectionKey } from "./types";
 
+/** All field variants may carry optional `help` text (shown as a "?" tooltip). */
 export type Field =
-  | { kind: "text"; key: string; label: string }
-  | { kind: "textarea"; key: string; label: string }
-  | { kind: "image"; key: string; label: string }
-  | { kind: "number"; key: string; label: string; min?: number; max?: number; step?: number }
-  | { kind: "datetime"; key: string; label: string }
-  | { kind: "pdf"; key: string; label: string }
-  | { kind: "link"; key: string; label: string }
-  | { kind: "list"; key: string; label: string; itemLabel: string; item: Field[] };
+  | { kind: "text"; key: string; label: string; help?: string }
+  | { kind: "textarea"; key: string; label: string; help?: string }
+  | { kind: "image"; key: string; label: string; help?: string }
+  | { kind: "number"; key: string; label: string; help?: string; min?: number; max?: number; step?: number }
+  | { kind: "datetime"; key: string; label: string; help?: string }
+  | { kind: "pdf"; key: string; label: string; help?: string }
+  | { kind: "toggle"; key: string; label: string; help?: string }
+  | { kind: "link"; key: string; label: string; help?: string }
+  | { kind: "list"; key: string; label: string; itemLabel: string; item: Field[]; help?: string };
 
 export interface SectionSchema {
   key: SectionKey;
@@ -97,13 +99,16 @@ export const SECTION_SCHEMAS: SectionSchema[] = [
     key: "location",
     title: "Location",
     fields: [
-      { kind: "text", key: "eyebrow", label: "Eyebrow" },
+      { kind: "text", key: "eyebrow", label: "Eyebrow", help: "Small line above the title." },
       { kind: "text", key: "title", label: "Title" },
       { kind: "text", key: "venue", label: "Venue name" },
-      { kind: "textarea", key: "address", label: "Address" },
-      { kind: "textarea", key: "body", label: "Note" },
-      { kind: "text", key: "mapUrl", label: "Directions link (Google/Waze)" },
-      { kind: "text", key: "mapEmbedUrl", label: "Embedded map URL (optional)" },
+      { kind: "textarea", key: "address", label: "Address", help: "Type the full address — the map buttons are built from this automatically." },
+      { kind: "text", key: "coords", label: "Exact coordinates (optional)", help: "lat,lng for a precise pin, e.g. 32.0853,34.7818. Leave blank to use the address." },
+      { kind: "textarea", key: "body", label: "Note", help: "Parking, accessibility, etc." },
+      { kind: "toggle", key: "maps.google", label: "Show Google Maps button" },
+      { kind: "toggle", key: "maps.waze", label: "Show Waze button" },
+      { kind: "toggle", key: "maps.apple", label: "Show Apple Maps button" },
+      { kind: "toggle", key: "maps.embed", label: "Show inline map" },
     ],
   },
   {
@@ -129,16 +134,24 @@ export const SECTION_SCHEMAS: SectionSchema[] = [
       { kind: "text", key: "eyebrow", label: "Eyebrow" },
       { kind: "text", key: "title", label: "Title" },
       { kind: "textarea", key: "body", label: "Intro" },
-      { kind: "text", key: "deadlineNote", label: "Deadline note" },
-      // Leave empty for a single RSVP form. Add events (e.g. Wedding, Henna) to
-      // show one form each — responses are tracked separately per event.
+      { kind: "text", key: "deadlineNote", label: "Deadline note", help: "e.g. 'Please respond by 1 May'." },
+      { kind: "number", key: "maxGuests", label: "Max guests per person", min: 1, max: 12, step: 1, help: "The highest number a guest can pick in the dropdown (e.g. 2 or 6)." },
+      // One RSVP form. Add events (e.g. Wedding, Henna) and the guest answers
+      // attending + guests for EACH event. Leave empty for a simple yes/no.
       {
-        kind: "list", key: "events", label: "Separate RSVP blocks (optional)", itemLabel: "Event",
+        kind: "list", key: "events", label: "Events (optional)", itemLabel: "Event",
+        help: "Add Wedding, Henna, etc. The guest replies to each one. Leave empty for a single RSVP.",
         item: [
-          { kind: "text", key: "id", label: "Id (e.g. wedding, henna)" },
+          { kind: "text", key: "id", label: "Id (e.g. wedding, henna)", help: "A short code, letters only. Used to keep responses separate." },
           { kind: "text", key: "label", label: "Heading (e.g. Wedding)" },
         ],
       },
+      { kind: "toggle", key: "fields.email", label: "Ask for email" },
+      { kind: "toggle", key: "fields.phone", label: "Ask for phone" },
+      { kind: "toggle", key: "fields.guests", label: "Ask number of guests" },
+      { kind: "toggle", key: "fields.guestNames", label: "Ask guest names" },
+      { kind: "toggle", key: "fields.dietary", label: "Ask dietary / kashrut notes" },
+      { kind: "toggle", key: "fields.message", label: "Ask for a message" },
     ],
   },
   {

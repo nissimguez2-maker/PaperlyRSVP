@@ -184,10 +184,14 @@ export interface LocationSection extends Toggleable {
   title?: string;
   /** Venue name. */
   venue?: string;
-  /** Full address (multi-line allowed using \n). */
+  /** Full address (multi-line allowed using \n). Used to build map buttons. */
   address?: string;
   body?: string;
-  /** Link that opens directions (Google/Waze/Apple Maps). */
+  /** Optional exact coordinates "lat,lng" for an accurate map pin. */
+  coords?: string;
+  /** Which map buttons to show (default: all on). */
+  maps?: { google?: boolean; waze?: boolean; apple?: boolean; embed?: boolean };
+  /** Manual override link (rarely needed; address is preferred). */
   mapUrl?: string;
   /** Optional <iframe> embed src for an inline map. */
   mapEmbedUrl?: string;
@@ -275,11 +279,21 @@ export interface RsvpSection extends Toggleable {
   /** Per-site overrides for field labels. */
   labels?: RsvpLabels;
   /**
-   * Optional multiple RSVP blocks. When present, one form is rendered per
-   * event so guests can RSVP separately to each (wedding, henna, …). When
-   * empty/omitted, a single combined RSVP form is shown.
+   * Events for this site (e.g. Wedding, Henna). ONE RSVP form is shown; when
+   * there are events, the guest answers attending + guest count PER event.
    */
   events?: RsvpEvent[];
+  /** Max number of guests selectable in the dropdown (per client; e.g. 2–6). */
+  maxGuests?: number;
+  /** Which optional fields to collect (default: all shown). Name is always asked. */
+  fields?: {
+    email?: boolean;
+    phone?: boolean;
+    guests?: boolean;
+    guestNames?: boolean;
+    dietary?: boolean;
+    message?: boolean;
+  };
 }
 
 export interface ContactLabels {

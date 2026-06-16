@@ -226,8 +226,25 @@ function renderSchedule(data: ScheduleSection): string {
 
 function renderLocation(data: LocationSection, labels: Dictionary): string {
   const p = palette("location", data.design);
-  const embed = data.mapEmbedUrl
-    ? `<div class="overflow-hidden rounded-2xl border ${p.line} shadow-sm"><iframe src="${esc(data.mapEmbedUrl)}" title="${esc(data.venue ?? "Map")}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="h-72 w-full md:h-80"></iframe></div>`
+  const m = data.maps ?? {};
+  const query = (data.coords && data.coords.trim()) || (data.address ? data.address.replace(/\n/g, ", ") : "");
+  const enc = encodeURIComponent(query);
+  const coordsEnc = data.coords ? encodeURIComponent(data.coords.trim()) : "";
+  const btn = (href: string, label: string) =>
+    `<a href="${href}" target="_blank" rel="noopener" class="btn-outline">${esc(label)}</a>`;
+  const buttons: string[] = [];
+  if (query) {
+    if (m.google !== false) buttons.push(btn(`https://www.google.com/maps/search/?api=1&query=${enc}`, "Google Maps"));
+    if (m.waze !== false) buttons.push(btn(coordsEnc ? `https://waze.com/ul?ll=${coordsEnc}&navigate=yes` : `https://waze.com/ul?q=${enc}&navigate=yes`, "Waze"));
+    if (m.apple !== false) buttons.push(btn(`https://maps.apple.com/?q=${enc}`, "Apple Maps"));
+  } else if (data.mapUrl) {
+    buttons.push(btn(esc(data.mapUrl), labels.directions));
+  }
+  const embedSrc = data.mapEmbedUrl
+    ? data.mapEmbedUrl
+    : (query && m.embed !== false ? `https://www.google.com/maps?q=${enc}&output=embed` : "");
+  const embed = embedSrc
+    ? `<div class="overflow-hidden rounded-2xl border ${p.line} shadow-sm"><iframe src="${esc(embedSrc)}" title="${esc(data.venue ?? "Map")}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="h-72 w-full md:h-80"></iframe></div>`
     : "";
   return `${open("location", data.design)}
   <div class="${containerClass("location", data.design)}" style="${containerStyle("location", data.design)}">
@@ -240,7 +257,7 @@ function renderLocation(data: LocationSection, labels: Dictionary): string {
         ${data.venue ? `<h3 class="font-heading text-3xl ${p.heading}">${esc(data.venue)}</h3>` : ""}
         ${data.address ? `<p class="mt-3 text-lg ${p.body}">${multiline(data.address)}</p>` : ""}
         ${data.body ? `<p class="mt-4 ${p.body}">${esc(data.body)}</p>` : ""}
-        ${data.mapUrl ? `<div class="mt-6"><a href="${esc(data.mapUrl)}" target="_blank" rel="noopener" class="${buttonClass("location", data.design) === "btn-primary" ? "btn-outline" : buttonClass("location", data.design)}">${esc(labels.directions)}</a></div>` : ""}
+        ${buttons.length ? `<div class="mt-6 flex flex-wrap justify-center gap-3 md:justify-start">${buttons.join("")}</div>` : ""}
       </div>
       ${embed}
     </div>
@@ -337,49 +354,59 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
   const p = palette("rsvp", data.design);
   const star = `<span class="text-accent" title="${esc(L.required)}">*</span>`;
   const ts = ctx.turnstileSiteKey && !ctx.editor ? `<div class="cf-turnstile" data-sitekey="${esc(ctx.turnstileSiteKey)}"></div>` : "";
+  const show = (k: "email" | "phone" | "guests" | "guestNames" | "dietary" | "message") => data.fields?.[k] !== false;
+  const max = Math.max(1, Math.min(20, data.maxGuests || 6));
+  const guestOptions = (sel = 1) => Array.from({ length: max + 1 }, (_, n) => `<option value="${n}"${n === sel ? " selected" : ""}>${n}</option>`).join("");
+  const events = (data.events ?? []).filter((e) => e && e.id);
 
-  // One form. `idp` keeps field ids unique when several forms are on the page;
-  // `block` adds the hidden block_id/event_label so each event's responses are
-  // tracked separately in D1 + the CSV export.
-  const form = (idp: string, block?: { id: string; label: string }) => `
+  const attending = (name: string) => `
+    <div class="mt-1 flex flex-col gap-3 sm:flex-row">
+      <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-lg border border-line bg-bg px-4 py-3 has-[:checked]:border-accent has-[:checked]:bg-accent/5">
+        <input type="radio" name="${name}" value="yes" required data-attending="yes" class="accent-[var(--site-accent)]"><span>${esc(L.attendingYes)}</span>
+      </label>
+      <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-lg border border-line bg-bg px-4 py-3 has-[:checked]:border-accent has-[:checked]:bg-accent/5">
+        <input type="radio" name="${name}" value="no" data-attending="no" class="accent-[var(--site-accent)]"><span>${esc(L.attendingNo)}</span>
+      </label>
+    </div>`;
+
+  const guestSelect = (name: string, id: string) => show("guests")
+    ? `<div data-guest class="mt-3"><label class="field-label" for="${id}">${esc(L.guests)}</label>
+        <select class="field-input" id="${id}" name="${name}">${guestOptions()}</select></div>`
+    : "";
+
+  // Per-event attendance (one form) when events exist; otherwise a single block.
+  const eventBlocks = events.length
+    ? `<input type="hidden" name="event_ids" value="${esc(events.map((e) => e.id).join(","))}">
+       ${events.map((e, i) => `
+        <div data-eventrow class="rounded-lg border border-line p-4">
+          <input type="hidden" name="eventlabel_${esc(e.id)}" value="${esc(e.label)}">
+          <p class="mb-2 font-heading text-xl ${p.heading}">${esc(e.label)}</p>
+          <span class="field-label">${esc(L.attending)} ${star}</span>
+          ${attending(`att_${esc(e.id)}`)}
+          ${guestSelect(`guests_${esc(e.id)}`, `rsvp-g-${i}`)}
+        </div>`).join("")}`
+    : `<fieldset><legend class="field-label">${esc(L.attending)} ${star}</legend>${attending("attending")}</fieldset>
+       ${guestSelect("guests", "rsvp-g")}`;
+
+  const form = `
     <form ${formAttrs("/api/rsvp", ctx.editor)} class="space-y-5 rounded-2xl border border-line bg-surface p-5 text-start shadow-sm sm:p-8">
       <input type="hidden" name="site_id" value="${esc(content.siteId)}">
       <input type="hidden" name="language" value="${esc(content.language)}">
-      ${block ? `<input type="hidden" name="block_id" value="${esc(block.id)}"><input type="hidden" name="event_label" value="${esc(block.label)}">` : ""}
-      ${block ? `<p class="font-heading text-2xl ${p.heading}">${esc(block.label)}</p>` : ""}
       <div>
-        <label class="field-label" for="${idp}-name">${esc(L.fullName)} ${star}</label>
-        <input class="field-input" id="${idp}-name" name="full_name" type="text" required autocomplete="name">
+        <label class="field-label" for="rsvp-name">${esc(L.fullName)} ${star}</label>
+        <input class="field-input" id="rsvp-name" name="full_name" type="text" required autocomplete="name">
       </div>
-      <div class="grid gap-5 sm:grid-cols-2">
-        <div><label class="field-label" for="${idp}-email">${esc(L.email)}</label><input class="field-input" id="${idp}-email" name="email" type="email" autocomplete="email"></div>
-        <div><label class="field-label" for="${idp}-phone">${esc(L.phone)}</label><input class="field-input" id="${idp}-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"></div>
-      </div>
-      <fieldset>
-        <legend class="field-label">${esc(L.attending)} ${star}</legend>
-        <div class="mt-1 flex flex-col gap-3 sm:flex-row">
-          <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-lg border border-line bg-bg px-4 py-3 has-[:checked]:border-accent has-[:checked]:bg-accent/5">
-            <input type="radio" name="attending" value="yes" required data-attending="yes" class="accent-[var(--site-accent)]"><span>${esc(L.attendingYes)}</span>
-          </label>
-          <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-lg border border-line bg-bg px-4 py-3 has-[:checked]:border-accent has-[:checked]:bg-accent/5">
-            <input type="radio" name="attending" value="no" data-attending="no" class="accent-[var(--site-accent)]"><span>${esc(L.attendingNo)}</span>
-          </label>
-        </div>
-      </fieldset>
-      <div data-guest-fields class="space-y-5">
-        <div><label class="field-label" for="${idp}-guests">${esc(L.guests)}</label><input class="field-input" id="${idp}-guests" name="guests" type="number" min="0" inputmode="numeric" value="1"></div>
-        <div><label class="field-label" for="${idp}-guest-names">${esc(L.guestNames)}</label><textarea class="field-input" id="${idp}-guest-names" name="guest_names" rows="2" placeholder="${esc(L.guestNamesHint)}"></textarea></div>
-        <div><label class="field-label" for="${idp}-dietary">${esc(L.dietary)}</label><textarea class="field-input" id="${idp}-dietary" name="dietary" rows="2" placeholder="${esc(L.dietaryHint)}"></textarea></div>
-      </div>
-      <div><label class="field-label" for="${idp}-message">${esc(L.message)}</label><textarea class="field-input" id="${idp}-message" name="message" rows="3"></textarea></div>
+      ${(show("email") || show("phone")) ? `<div class="grid gap-5 sm:grid-cols-2">
+        ${show("email") ? `<div><label class="field-label" for="rsvp-email">${esc(L.email)}</label><input class="field-input" id="rsvp-email" name="email" type="email" autocomplete="email"></div>` : ""}
+        ${show("phone") ? `<div><label class="field-label" for="rsvp-phone">${esc(L.phone)}</label><input class="field-input" id="rsvp-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"></div>` : ""}
+      </div>` : ""}
+      ${eventBlocks}
+      ${show("guestNames") ? `<div><label class="field-label" for="rsvp-guest-names">${esc(L.guestNames)}</label><textarea class="field-input" id="rsvp-guest-names" name="guest_names" rows="2" placeholder="${esc(L.guestNamesHint)}"></textarea></div>` : ""}
+      ${show("dietary") ? `<div><label class="field-label" for="rsvp-dietary">${esc(L.dietary)}</label><textarea class="field-input" id="rsvp-dietary" name="dietary" rows="2" placeholder="${esc(L.dietaryHint)}"></textarea></div>` : ""}
+      ${show("message") ? `<div><label class="field-label" for="rsvp-message">${esc(L.message)}</label><textarea class="field-input" id="rsvp-message" name="message" rows="3"></textarea></div>` : ""}
       ${ts}
       <button type="submit" class="${buttonClass("rsvp", data.design)} w-full">${esc(L.rsvpSubmit)}</button>
     </form>`;
-
-  const events = data.events?.filter((e) => e && e.id) ?? [];
-  const forms = events.length
-    ? `<div class="space-y-8">${events.map((e, i) => form(`rsvp${i}`, { id: e.id, label: e.label })).join("")}</div>`
-    : form("rsvp");
 
   return `${open("rsvp", data.design)}
   <div class="${containerClass("rsvp", data.design)}" style="${containerStyle("rsvp", data.design)}">
@@ -389,7 +416,7 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
       ${data.body ? `<p class="mx-auto mt-4 max-w-xl ${p.body}">${esc(data.body)}</p>` : ""}
       ${data.deadlineNote ? `<p class="mt-4 text-sm uppercase tracking-[0.2em] text-accent">${esc(data.deadlineNote)}</p>` : ""}
     </div>
-    ${forms}
+    ${form}
   </div>
 </section>`;
 }
@@ -577,8 +604,8 @@ const SITE_SCRIPTS = `
 document.querySelectorAll('input[data-attending]').forEach(function(el){
   el.addEventListener('change',function(e){
     var declined=e.target.value==='no';
-    var form=e.target.closest('form')||document;
-    form.querySelectorAll('[data-guest-fields]').forEach(function(g){g.style.display=declined?'none':'';});
+    var scope=e.target.closest('[data-eventrow]')||e.target.closest('form')||document;
+    scope.querySelectorAll('[data-guest]').forEach(function(g){g.style.display=declined?'none':'';});
   });
 });
 var fab=document.getElementById('pl-fab'),rsvp=document.getElementById('rsvp');
