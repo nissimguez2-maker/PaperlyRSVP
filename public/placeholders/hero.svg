@@ -1,15 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-label="Hero placeholder">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-label="Cover photo placeholder">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#243029"/>
-      <stop offset="1" stop-color="#1f2a24"/>
+      <stop offset="0" stop-color="#a99d8b"/>
+      <stop offset="1" stop-color="#6f6657"/>
     </linearGradient>
   </defs>
   <rect width="1600" height="1000" fill="url(#g)"/>
-  <g fill="none" stroke="#b08d57" stroke-opacity="0.5">
-    <rect x="60" y="60" width="1480" height="880" stroke-width="2"/>
-    <circle cx="800" cy="420" r="120" stroke-width="1.5"/>
+  <g transform="translate(740,360)" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="0" y="0" width="120" height="100" rx="12"/>
+    <circle cx="34" cy="34" r="12" fill="#ffffff" fill-opacity="0.35" stroke="none"/>
+    <path d="M8 92 L46 54 L74 82 L92 66 L112 88"/>
   </g>
-  <text x="800" y="435" text-anchor="middle" font-family="Georgia, serif" font-size="64" fill="#f4efe7" letter-spacing="6">S &amp; D</text>
-  <text x="800" y="640" text-anchor="middle" font-family="Georgia, serif" font-size="34" fill="#cbb894" letter-spacing="10">HERO IMAGE — replace in visuals/</text>
+  <text x="800" y="560" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#ffffff" fill-opacity="0.55" letter-spacing="8">COVER PHOTO</text>
 </svg>

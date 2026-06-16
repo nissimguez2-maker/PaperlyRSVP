@@ -1,6 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="760" viewBox="0 0 800 760" role="img" aria-label="Gallery placeholder 2">
-  <rect width="800" height="760" fill="#dfe4dd"/>
-  <rect x="0" y="0" width="800" height="760" fill="#1f2a24" opacity="0.08"/>
-  <text x="400" y="400" text-anchor="middle" font-family="Georgia, serif" font-size="120" fill="#1f2a24" opacity="0.5">2</text>
-  <text x="400" y="490" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#7c736a" letter-spacing="4">gallery photo</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="760" viewBox="0 0 800 760" role="img" aria-label="Photo placeholder">
+  <rect width="800" height="760" fill="#e7e3d9"/>
+  <g transform="translate(340,330)" fill="none" stroke="#bcb09b" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="0" y="0" width="120" height="100" rx="12"/>
+    <circle cx="34" cy="34" r="12" fill="#bcb09b" stroke="none"/>
+    <path d="M8 92 L46 54 L74 82 L92 66 L112 88"/>
+  </g>
+  <text x="400" y="510" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#9f947f" letter-spacing="5">PHOTO</text>
 </svg>
