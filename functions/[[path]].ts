@@ -15,7 +15,7 @@
  * Lifecycle-aware: active/building render; paused → "coming soon" (503);
  * archived → 404.
  */
-import type { Env } from "./_shared";
+import { type Env, hasDb } from "./_shared";
 import { getSiteBySlug, getSiteByDomain, type SiteRow } from "./_sites";
 import { renderDocument } from "../src/lib/render";
 import type { SiteContent, SiteTheme } from "../src/lib/types";
@@ -36,6 +36,15 @@ function comingSoon(title: string): string {
 export const onRequest: PagesFunction<Env> = async ({ request, env, next }) => {
   const url = new URL(request.url);
   const path = url.pathname;
+
+  // Without a database we can't resolve sites — fall through so /admin still
+  // loads (and can show the "connect the database" message).
+  if (!hasDb(env)) {
+    if (path === "/" || path === "") {
+      return Response.redirect(new URL("/admin", request.url).toString(), 302);
+    }
+    return next();
+  }
 
   // Decide whether this request is a SITE PAGE; otherwise fall through to the
   // static asset server (CSS, /admin, /thank-you, placeholders, etc.).

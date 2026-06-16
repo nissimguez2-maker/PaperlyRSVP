@@ -6,9 +6,9 @@
  *   PATCH  /api/site/<slug>   → { status?, domain? }  (pause / publish / domain)
  *   DELETE /api/site/<slug>   → remove the site
  */
-import { type Env, requireAdmin, json } from "../../_shared";
+import { type Env, requireAdmin, json, hasDb, DB_MISSING_MSG, errorJson } from "../../_shared";
 import {
-  getSiteBySlug, saveSiteContent, setStatus, setDomain, deleteSite, type SiteStatus,
+  getSiteBySlug, saveSiteContent, setStatus, setDomain, deleteSite, ensureSchema, type SiteStatus,
 } from "../../_sites";
 
 const STATUSES: SiteStatus[] = ["building", "active", "paused", "archived"];
@@ -16,7 +16,10 @@ const STATUSES: SiteStatus[] = ["building", "active", "paused", "archived"];
 export const onRequest: PagesFunction<Env> = async ({ request, env, params }) => {
   const unauth = requireAdmin(request, env);
   if (unauth) return unauth;
+  if (!hasDb(env)) return json({ error: DB_MISSING_MSG }, 503);
 
+  try {
+  await ensureSchema(env);
   const slug = String(params.slug);
   const site = await getSiteBySlug(env, slug);
   if (!site) return json({ error: "Not found" }, 404);
@@ -54,5 +57,8 @@ export const onRequest: PagesFunction<Env> = async ({ request, env, params }) =>
 
     default:
       return new Response("Method not allowed", { status: 405 });
+  }
+  } catch (err) {
+    return errorJson(err);
   }
 };

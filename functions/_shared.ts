@@ -30,6 +30,23 @@ export function json(data: unknown, status = 200): Response {
   });
 }
 
+/** Friendly message when the D1 binding is missing at runtime. */
+export const DB_MISSING_MSG =
+  "Database not connected. In Cloudflare → your Pages project → Settings → " +
+  "Bindings, add a D1 database binding named exactly DB (on Production), then " +
+  "redeploy.";
+
+/** True when the D1 binding is present. */
+export function hasDb(env: Env): boolean {
+  return !!env.DB && typeof env.DB.prepare === "function";
+}
+
+/** Turn any thrown error into a clean JSON 500 (instead of Cloudflare's HTML). */
+export function errorJson(err: unknown): Response {
+  const message = err instanceof Error ? err.message : String(err);
+  return json({ error: message }, 500);
+}
+
 /**
  * Verify a Cloudflare Turnstile token server-side.
  *

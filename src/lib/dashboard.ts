@@ -19,6 +19,16 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
   return { Authorization: "Basic " + btoa("admin:" + adminPw()), ...extra };
 }
 
+/** Pull a readable message out of an error response (JSON {error} or text). */
+async function errText(res: Response): Promise<string> {
+  try {
+    const j = (await res.json()) as { error?: string };
+    return j.error || JSON.stringify(j);
+  } catch {
+    return `Error ${res.status}`;
+  }
+}
+
 const GROUPS: { status: Status; label: string; hint: string }[] = [
   { status: "active", label: "Live", hint: "Published and visible to guests" },
   { status: "building", label: "In progress", hint: "Drafts you're still building" },
@@ -66,7 +76,7 @@ async function refresh(): Promise<void> {
   const root = document.getElementById("pl-sites")!;
   const res = await fetch("/api/sites", { headers: authHeaders() });
   if (res.status === 401) { sessionStorage.removeItem("pl_admin"); root.innerHTML = `<p class="text-red-600">Wrong password. <button onclick="location.reload()" class="underline">Try again</button></p>`; return; }
-  if (!res.ok) { root.innerHTML = `<p class="text-red-600">Couldn't load sites (${res.status}).</p>`; return; }
+  if (!res.ok) { root.innerHTML = `<p class="text-red-600">${esc(await errText(res))}</p>`; return; }
   const sites = (await res.json()) as SiteSummary[];
 
   root.innerHTML = GROUPS.map((g) => {
@@ -93,7 +103,7 @@ async function createSite(): Promise<void> {
     method: "POST", headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ title, language, eventType }),
   });
-  if (!res.ok) { alert("Create failed: " + (await res.text())); return; }
+  if (!res.ok) { alert("Create failed:\n\n" + (await errText(res))); return; }
   const { slug } = (await res.json()) as { slug: string };
   location.href = `/admin/edit?slug=${encodeURIComponent(slug)}`;
 }
