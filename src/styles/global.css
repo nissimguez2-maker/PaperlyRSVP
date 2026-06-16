@@ -1,17 +1,48 @@
 @import "tailwindcss";
 
 /*
-  THEME SYSTEM
-  ------------
-  Every client site has its own look. Instead of editing CSS per client, the
-  colours and fonts are driven by CSS variables that are set, per site, from
-  sites/<id>/theme.json (injected in BaseLayout.astro as `--site-*` variables).
+  ============================================================================
+  PAPERLY — BRAND SYSTEM (single source of truth)
+  ============================================================================
+  Two distinct token families live here on purpose:
 
-  Here we map those `--site-*` variables onto Tailwind's theme using
-  `@theme inline`. Because of `inline`, the generated utilities (bg-primary,
-  text-ink, font-heading, …) resolve to the live CSS variable, so changing
-  theme.json instantly re-skins the whole site — no rebuild of CSS rules.
+  1) PER-SITE THEME (`--site-*`) — the look of a CLIENT'S published invitation.
+     These are overridden per site from theme.json (injected by the renderer),
+     so each wedding/bar-mitzvah site can look completely different. We map them
+     onto Tailwind via `@theme inline` so utilities (bg-primary, text-ink, …)
+     resolve to the LIVE variable and re-skin instantly.
+
+  2) PAPERLY CHROME (`pl-*`) — the look of the PRODUCT itself: the control panel
+     and the Studio editor. This is a fixed, hand-built brand and must NOT feel
+     like default Tailwind ("neutral-900 on neutral-50" = the generic AI look).
+     It is warm, editorial, stationery-grade: parchment paper, deep warm ink,
+     a single restrained gold "foil" accent, deep evergreen as a secondary.
+
+  ── Chrome palette ──────────────────────────────────────────────────────────
+     canvas  #F3EFE7  app background (warm parchment)
+     paper   #FCFAF5  cards / surfaces (warm white)
+     ink     #211D17  primary text, top bars (warm near-black, never #000)
+     ink-2   #4A4339  secondary text
+     muted   #8C8377  meta / tertiary text
+     line    #E7DFD1  hairline borders on paper
+     gold    #A87F46  foil accent — primary CTA, links, focus rings
+     gold-2  #C8A66A  lighter gold (hover / gradient stop)
+     wash    #F2E9D8  gold tint — selected states, soft badges, hovers
+     forest  #243029  deep evergreen — secondary brand
+     sage    #5E7363  muted green — "live"/success states
+
+  ── Chrome type ─────────────────────────────────────────────────────────────
+     font-pl-display  Fraunces / Cormorant — the "Paperly" wordmark & headings
+     font-pl-ui       Inter — all UI text
+     (Pages that want the real webfonts add the Google Fonts <link>; everything
+      degrades gracefully to Georgia / system fonts.)
+
+  ── Chrome primitives (use these instead of raw neutral-* utilities) ──────────
+     .pl-card  .pl-btn  .pl-btn-gold  .pl-btn-ghost  .pl-btn-danger
+     .pl-input  .pl-select  .pl-label  .pl-chip  .pl-topbar  .pl-wordmark
+  ============================================================================
 */
+
 @theme inline {
   --color-bg: var(--site-bg);
   --color-surface: var(--site-surface);
@@ -25,7 +56,31 @@
   --font-body: var(--site-font-body);
 }
 
-/* Sensible defaults so the site always renders even before theme.json loads. */
+/* Paperly chrome brand tokens — constant (NOT per-site). These become real
+   Tailwind utilities: bg-pl-ink, text-pl-gold, border-pl-line, ring-pl-gold… */
+@theme {
+  --color-pl-canvas: #f3efe7;
+  --color-pl-paper: #fcfaf5;
+  --color-pl-ink: #211d17;
+  --color-pl-ink-2: #4a4339;
+  --color-pl-muted: #8c8377;
+  --color-pl-line: #e7dfd1;
+  --color-pl-gold: #a87f46;
+  --color-pl-gold-2: #c8a66a;
+  --color-pl-wash: #f2e9d8;
+  --color-pl-forest: #243029;
+  --color-pl-sage: #5e7363;
+
+  --font-pl-display: "Fraunces", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-pl-ui: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Warm, layered chrome shadow (replaces flat gray box-shadows). */
+  --shadow-pl: 0 1px 2px rgba(33, 29, 23, 0.04), 0 10px 30px -16px rgba(33, 29, 23, 0.22);
+  --shadow-pl-lg: 0 2px 6px rgba(33, 29, 23, 0.05), 0 28px 60px -28px rgba(33, 29, 23, 0.32);
+}
+
+/* Sensible per-site defaults so a client site always renders even before its
+   own theme.json loads. (Overridden per site by the renderer.) */
 :root {
   --site-bg: #faf8f5;
   --site-surface: #ffffff;
@@ -49,6 +104,7 @@ body {
   color: var(--color-ink);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overflow-x: hidden; /* mobile-native: never sideways-scroll */
 }
@@ -64,30 +120,34 @@ h1, h2, h3, h4 {
   letter-spacing: 0.01em;
 }
 
-/* A small set of shared, reusable building blocks. Keep these generic so they
-   work for any client; per-site personality comes from the theme variables. */
+/* Warm text selection across the whole product. */
+::selection {
+  background: var(--color-pl-wash);
+  color: var(--color-pl-ink);
+}
+
 @layer components {
+  /* ── Shared building blocks for the PUBLISHED CLIENT SITES ──────────────
+     Generic + theme-driven (per-site personality comes from --site-*). */
   .container-prose {
     @apply mx-auto w-full max-w-5xl px-6 sm:px-8;
   }
 
   .eyebrow {
-    @apply text-xs uppercase tracking-[0.25em] text-accent;
+    @apply text-xs uppercase tracking-[0.28em] text-accent;
   }
 
   .section-title {
     @apply font-heading text-4xl sm:text-5xl text-primary;
   }
 
-  /* Shared button shape. `.btn` can be used on its own (with extra utilities)
-     or via the .btn-primary / .btn-outline variants. Note: in Tailwind v4
-     @apply only accepts real utilities, so the variants repeat the base shape
-     via this grouped selector rather than @apply-ing `.btn`. */
+  /* Shared button shape (Tailwind v4: @apply only takes real utilities, so the
+     variants repeat the base shape via this grouped selector). */
   .btn,
   .btn-primary,
   .btn-outline {
     @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-8 py-3
-           text-sm uppercase tracking-[0.18em] transition-colors duration-200;
+           text-sm uppercase tracking-[0.18em] transition-all duration-200;
     touch-action: manipulation; /* snappier taps, no 300ms delay */
   }
   .btn-primary {
@@ -115,6 +175,56 @@ h1, h2, h3, h4 {
   }
   .fab.is-hidden {
     @apply pointer-events-none translate-y-24 opacity-0;
+  }
+
+  /* ── PAPERLY CHROME primitives (control panel + Studio) ─────────────────
+     Use these instead of raw neutral-* utilities so the product reads as one
+     crafted brand. */
+  .pl-wordmark {
+    @apply font-pl-display text-[1.35rem] font-semibold leading-none tracking-[-0.01em];
+  }
+
+  .pl-topbar {
+    @apply flex items-center gap-3 bg-pl-ink px-4 py-2.5 text-pl-paper;
+  }
+
+  .pl-card {
+    @apply rounded-2xl border border-pl-line bg-pl-paper;
+    box-shadow: var(--shadow-pl);
+  }
+
+  .pl-btn,
+  .pl-btn-gold,
+  .pl-btn-ghost,
+  .pl-btn-danger {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2
+           text-sm font-medium transition-colors duration-150;
+    touch-action: manipulation;
+  }
+  .pl-btn {
+    @apply bg-pl-ink text-pl-paper hover:bg-pl-forest;
+  }
+  .pl-btn-gold {
+    @apply bg-pl-gold text-white hover:bg-pl-gold-2;
+  }
+  .pl-btn-ghost {
+    @apply bg-transparent text-pl-ink-2 hover:bg-pl-wash hover:text-pl-ink;
+  }
+  .pl-btn-danger {
+    @apply bg-transparent text-red-700 hover:bg-red-50;
+  }
+
+  .pl-label {
+    @apply mb-1 block text-xs font-medium text-pl-ink-2;
+  }
+  .pl-input,
+  .pl-select {
+    @apply w-full rounded-lg border border-pl-line bg-pl-paper px-3 py-2 text-sm text-pl-ink
+           outline-none transition focus:border-pl-gold focus:ring-2 focus:ring-pl-gold/25;
+  }
+
+  .pl-chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-wide;
   }
 }
 
