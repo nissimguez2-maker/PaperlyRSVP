@@ -39,8 +39,55 @@ export interface SectionDesign {
   width?: "narrow" | "normal" | "wide";
   /** Heading size multiplier (0.7–1.6, default 1) applied on top of a clamp(). */
   titleScale?: number;
-  /** Section background colour token (from theme). */
-  bg?: "bg" | "surface" | "primary" | "accent";
+  /**
+   * Section background. "transparent" lets the whole-page background
+   * (content.background) flow through this section.
+   */
+  bg?: "bg" | "surface" | "primary" | "accent" | "transparent";
+
+  // --- v2 design controls (all optional, all responsive via inline style) ---
+  /** Horizontal padding override, rem (0–4). Overrides the default px-5/sm:px-8. */
+  padX?: number;
+  /** Fine content max-width override, rem (28–80). Wins over `width` when set. */
+  maxW?: number;
+  /** Gap between repeated items (schedule/gallery/details), rem (0.5–4). */
+  gap?: number;
+  /** Heading letter-spacing, em (-0.02–0.3). */
+  headingTracking?: number;
+  /** Heading line-height multiplier (0.9–1.6). */
+  headingLeading?: number;
+  /** Hex override for body/ink text in this section, e.g. "#3a3a3a". */
+  inkOverride?: string;
+  /** Hex override for the accent colour scoped to this section. */
+  accentOverride?: string;
+  /** Minimum section height in svh (0–100) — e.g. make a section full-screen. */
+  minH?: number;
+  /** Image corner radius, rem (0–2.5). */
+  imgRadius?: number;
+  /** Dark scrim over images, 0–0.8 (helps text/legibility over photos). */
+  imgScrim?: number;
+  /** Negative top margin for a gentle overlap with the previous section, rem (0–6). */
+  overlap?: number;
+  /** Divider drawn at the top edge of the section. */
+  divider?: "none" | "line" | "gradient";
+  /** Hero text vertical anchor (hero only). */
+  heroAnchor?: "top" | "center" | "bottom";
+  /** Primary button style. */
+  buttonStyle?: "solid" | "outline" | "pill";
+}
+
+/** Whole-page background that sits behind every section. */
+export interface PageBackground {
+  /** Uploaded image URL (/img/... or /placeholders/...). */
+  image?: string;
+  /** Built-in subtle pattern when no image is set. */
+  pattern?: "none" | "dots" | "grid";
+  /** Dark scrim 0–0.85 over the background for readability. */
+  scrim?: number;
+  /** CSS background-size behaviour. */
+  size?: "cover" | "contain" | "repeat";
+  /** Parallax-ish fixed attachment (desktop). */
+  fixed?: boolean;
 }
 
 /** A single section can always be turned off with `enabled: false`. */
@@ -226,6 +273,8 @@ export interface SiteContent {
   eventType: EventType;
   meta: SiteMeta;
   nav?: NavItem[];
+  /** Optional whole-page background behind every section (set in the Studio). */
+  background?: PageBackground;
   /**
    * Order the sections render in. Set by drag-reordering in the Studio. Any
    * known section omitted here falls back to the default order; unknown keys

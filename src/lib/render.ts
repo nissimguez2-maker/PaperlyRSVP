@@ -13,14 +13,16 @@
  * so the visual controls stay mobile-safe.
  */
 import type {
-  SiteContent, SiteTheme, SectionKey, NavItem,
+  SiteContent, SiteTheme, SectionKey, SectionDesign, NavItem,
   HeroSection, EventDetailsSection, ScheduleSection, LocationSection,
   GallerySection, RsvpSection, ContactSection, FaqSection, FooterContent,
 } from "./types";
 import type { Dictionary } from "./i18n";
 import { getDictionary, withOverrides } from "./i18n";
 import {
-  bgClass, spacingStyle, containerClass, titleStyle, resolveDesign,
+  bgClass, sectionStyle, containerClass, containerStyle, gapStyle, titleStyle,
+  heroHeadingStyle, heroAnchorClass, imageStyle, imgScrim, buttonClass, dividerHtml,
+  resolveDesign,
 } from "./design";
 
 export interface RenderCtx {
@@ -66,10 +68,14 @@ function palette(key: SectionKey, d?: HeroSection["design"]) {
   };
 }
 
-/** Build the outer <section> open tag with id, design background + spacing. */
-function open(key: SectionKey, design: HeroSection["design"]): string {
+/**
+ * Build the outer <section> open tag (id, background, spacing + v2 styles) and
+ * any top divider. `data-reveal` is the hook for the scroll-reveal animation.
+ * `relative` lets the gradient divider / overlap work.
+ */
+function open(key: SectionKey, design: SectionDesign | undefined): string {
   const id = ANCHORS[key];
-  return `<section id="${id}" data-pl-section="${key}" class="${bgClass(key, design)}" style="${spacingStyle(key, design)}">`;
+  return `<section id="${id}" data-pl-section="${key}" data-reveal class="relative ${bgClass(key, design)}" style="${sectionStyle(key, design)}">${dividerHtml(key, design)}`;
 }
 
 // --- sections --------------------------------------------------------------
@@ -111,13 +117,15 @@ function renderHero(data: HeroSection): string {
   const cta = data.cta
     ? `<div class="mt-9"><a href="${esc(data.cta.href)}" class="btn border border-white/70 text-white hover:bg-white hover:text-primary">${esc(data.cta.label)}</a></div>`
     : "";
+  const minH = resolveDesign("hero", data.design).minH;
+  const minStyle = typeof minH === "number" && minH > 0 ? `min-height:${minH}svh` : "min-height:100svh";
   return `
-<section id="top" data-pl-section="hero" class="relative flex min-h-[100svh] items-center justify-center overflow-hidden">
+<section id="top" data-pl-section="hero" data-reveal class="relative flex justify-center overflow-hidden ${heroAnchorClass(data.design)}" style="${minStyle}">
   ${bg}
   <div class="absolute inset-0 bg-black" style="opacity:${overlay}"></div>
   <div class="relative z-10 mx-auto w-full max-w-3xl px-6 text-center text-white">
     ${data.eyebrow ? `<p data-pl-field="eyebrow" class="mb-5 text-[0.7rem] uppercase tracking-[0.3em] text-white/80 sm:text-xs">${esc(data.eyebrow)}</p>` : ""}
-    <h1 data-pl-field="title" class="font-heading leading-[1.05]" style="font-size:calc(clamp(2.75rem, 13vw, 5rem) * ${resolveDesign("hero", data.design).titleScale || 1})">${esc(data.title)}</h1>
+    <h1 data-pl-field="title" class="font-heading leading-[1.05]" style="${heroHeadingStyle(data.design)}">${esc(data.title)}</h1>
     ${data.subtitle ? `<p data-pl-field="subtitle" class="mt-3 font-heading text-xl text-white/90 sm:text-3xl">${esc(data.subtitle)}</p>` : ""}
     ${meta}
     ${cta}
@@ -139,13 +147,13 @@ function renderEventDetails(data: EventDetailsSection): string {
       ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
       ${data.title ? `<h2 class="mb-6 font-heading ${p.heading}" style="${titleStyle("eventDetails", data.design)}">${esc(data.title)}</h2>` : ""}
       ${data.body ? `<p class="text-lg leading-relaxed ${p.body}">${multiline(data.body)}</p>` : ""}
-      ${items ? `<dl class="mt-9 grid grid-cols-1 gap-6 sm:grid-cols-2">${items}</dl>` : ""}
+      ${items ? `<dl class="mt-9 grid grid-cols-1 gap-6 sm:grid-cols-2" style="${gapStyle("eventDetails", data.design)}">${items}</dl>` : ""}
     </div>`;
   const image = data.image
-    ? `<div class="order-first md:order-last"><img src="${esc(data.image)}" alt="${esc(data.title ?? "")}" class="mx-auto w-full max-w-sm rounded-2xl border ${p.line} object-cover shadow-sm"></div>`
+    ? `<div class="order-first md:order-last"><img src="${esc(data.image)}" alt="${esc(data.title ?? "")}" class="mx-auto w-full max-w-sm rounded-2xl border ${p.line} object-cover shadow-sm" style="${imageStyle("eventDetails", data.design)}"></div>`
     : "";
   return `${open("eventDetails", data.design)}
-  <div class="${containerClass("eventDetails", data.design)}">
+  <div class="${containerClass("eventDetails", data.design)}" style="${containerStyle("eventDetails", data.design)}">
     <div class="grid items-center gap-10 md:grid-cols-2">${text}${image}</div>
   </div>
 </section>`;
@@ -163,7 +171,7 @@ function renderSchedule(data: ScheduleSection): string {
       </li>`)
     .join("");
   return `${open("schedule", data.design)}
-  <div class="${containerClass("schedule", data.design)}">
+  <div class="${containerClass("schedule", data.design)}" style="${containerStyle("schedule", data.design)}">
     <div class="mb-10">
       ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("schedule", data.design)}">${esc(data.title)}</h2>` : ""}
@@ -180,7 +188,7 @@ function renderLocation(data: LocationSection, labels: Dictionary): string {
     ? `<div class="overflow-hidden rounded-2xl border ${p.line} shadow-sm"><iframe src="${esc(data.mapEmbedUrl)}" title="${esc(data.venue ?? "Map")}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="h-72 w-full md:h-80"></iframe></div>`
     : "";
   return `${open("location", data.design)}
-  <div class="${containerClass("location", data.design)}">
+  <div class="${containerClass("location", data.design)}" style="${containerStyle("location", data.design)}">
     <div class="mb-10">
       ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("location", data.design)}">${esc(data.title)}</h2>` : ""}
@@ -190,7 +198,7 @@ function renderLocation(data: LocationSection, labels: Dictionary): string {
         ${data.venue ? `<h3 class="font-heading text-3xl ${p.heading}">${esc(data.venue)}</h3>` : ""}
         ${data.address ? `<p class="mt-3 text-lg ${p.body}">${multiline(data.address)}</p>` : ""}
         ${data.body ? `<p class="mt-4 ${p.body}">${esc(data.body)}</p>` : ""}
-        ${data.mapUrl ? `<div class="mt-6"><a href="${esc(data.mapUrl)}" target="_blank" rel="noopener" class="btn-outline">${esc(labels.directions)}</a></div>` : ""}
+        ${data.mapUrl ? `<div class="mt-6"><a href="${esc(data.mapUrl)}" target="_blank" rel="noopener" class="${buttonClass("location", data.design) === "btn-primary" ? "btn-outline" : buttonClass("location", data.design)}">${esc(labels.directions)}</a></div>` : ""}
       </div>
       ${embed}
     </div>
@@ -200,17 +208,26 @@ function renderLocation(data: LocationSection, labels: Dictionary): string {
 
 function renderGallery(data: GallerySection): string {
   const p = palette("gallery", data.design);
+  const rad = imageStyle("gallery", data.design);
+  const scrim = imgScrim("gallery", data.design);
   const imgs = (data.images ?? [])
-    .map((im) => `<img src="${esc(im.src)}" alt="${esc(im.alt ?? "")}" loading="lazy" class="mb-4 w-full break-inside-avoid rounded-xl object-cover shadow-sm transition-transform duration-300 hover:scale-[1.02]">`)
+    .map((im) => {
+      const img = `<img src="${esc(im.src)}" alt="${esc(im.alt ?? "")}" loading="lazy" class="w-full rounded-xl object-cover shadow-sm transition-transform duration-300 hover:scale-[1.02]" style="${rad}">`;
+      const inner = scrim > 0
+        ? `<div class="relative overflow-hidden rounded-xl" style="${rad}">${img}<div class="pointer-events-none absolute inset-0 bg-black" style="opacity:${scrim}"></div></div>`
+        : img;
+      return `<div class="mb-4 break-inside-avoid">${inner}</div>`;
+    })
     .join("");
+  const colGap = gapStyle("gallery", data.design).replace("gap:", "column-gap:");
   return `${open("gallery", data.design)}
-  <div class="${containerClass("gallery", data.design)}">
+  <div class="${containerClass("gallery", data.design)}" style="${containerStyle("gallery", data.design)}">
     <div class="mb-10">
       ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("gallery", data.design)}">${esc(data.title)}</h2>` : ""}
       ${data.body ? `<p class="mx-auto mt-4 max-w-2xl ${p.body}">${esc(data.body)}</p>` : ""}
     </div>
-    <div class="columns-2 gap-4 md:columns-3">${imgs}</div>
+    <div class="columns-2 gap-4 md:columns-3" style="${colGap}">${imgs}</div>
   </div>
 </section>`;
 }
@@ -260,7 +277,7 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
       </div>
       <div><label class="field-label" for="${idp}-message">${esc(L.message)}</label><textarea class="field-input" id="${idp}-message" name="message" rows="3"></textarea></div>
       ${ts}
-      <button type="submit" class="btn-primary w-full">${esc(L.rsvpSubmit)}</button>
+      <button type="submit" class="${buttonClass("rsvp", data.design)} w-full">${esc(L.rsvpSubmit)}</button>
     </form>`;
 
   const events = data.events?.filter((e) => e && e.id) ?? [];
@@ -269,7 +286,7 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
     : form("rsvp");
 
   return `${open("rsvp", data.design)}
-  <div class="${containerClass("rsvp", data.design)}">
+  <div class="${containerClass("rsvp", data.design)}" style="${containerStyle("rsvp", data.design)}">
     <div class="mb-9">
       ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("rsvp", data.design)}">${esc(data.title)}</h2>` : ""}
@@ -287,7 +304,7 @@ function renderContact(data: ContactSection, content: SiteContent, ctx: RenderCt
   const star = `<span class="text-accent" title="${esc(L.required)}">*</span>`;
   const ts = ctx.turnstileSiteKey && !ctx.editor ? `<div class="cf-turnstile" data-sitekey="${esc(ctx.turnstileSiteKey)}"></div>` : "";
   return `${open("contact", data.design)}
-  <div class="${containerClass("contact", data.design)}">
+  <div class="${containerClass("contact", data.design)}" style="${containerStyle("contact", data.design)}">
     <div class="mb-9">
       ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("contact", data.design)}">${esc(data.title)}</h2>` : ""}
@@ -300,7 +317,7 @@ function renderContact(data: ContactSection, content: SiteContent, ctx: RenderCt
       <div><label class="field-label" for="contact-email">${esc(L.contactEmail)}</label><input class="field-input" id="contact-email" name="email" type="email" autocomplete="email"></div>
       <div><label class="field-label" for="contact-message">${esc(L.contactMessage)} ${star}</label><textarea class="field-input" id="contact-message" name="message" rows="4" required></textarea></div>
       ${ts}
-      <button type="submit" class="btn-primary w-full">${esc(L.contactSubmit)}</button>
+      <button type="submit" class="${buttonClass("contact", data.design)} w-full">${esc(L.contactSubmit)}</button>
     </form>
   </div>
 </section>`;
@@ -319,7 +336,7 @@ function renderFaq(data: FaqSection): string {
       </details>`)
     .join("");
   return `${open("faq", data.design)}
-  <div class="${containerClass("faq", data.design)}">
+  <div class="${containerClass("faq", data.design)}" style="${containerStyle("faq", data.design)}">
     <div class="mb-9">
       ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
       ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("faq", data.design)}">${esc(data.title)}</h2>` : ""}
@@ -379,7 +396,35 @@ export function renderSection(key: SectionKey, content: SiteContent, ctx: Render
   }
 }
 
-/** Render the whole page body: nav + ordered sections + footer. */
+const PATTERN_CSS: Record<string, string> = {
+  dots: "radial-gradient(currentColor 1px, transparent 1px);background-size:18px 18px",
+  grid: "linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px);background-size:28px 28px",
+};
+
+/**
+ * Whole-page background layer (fixed, behind everything) + readability scrim.
+ * Returns "" when no background is configured. Used by renderApp so BOTH the
+ * published site and the Studio preview show it.
+ */
+export function pageBackgroundHtml(content: SiteContent): string {
+  const bg = content.background;
+  if (!bg || (!bg.image && (!bg.pattern || bg.pattern === "none"))) return "";
+  let layer = "";
+  if (bg.image) {
+    const size = bg.size === "contain" ? "contain" : bg.size === "repeat" ? "auto" : "cover";
+    const repeat = bg.size === "repeat" ? "repeat" : "no-repeat";
+    const attach = bg.fixed ? "fixed" : "scroll";
+    layer = `<div class="pl-bg" style="position:fixed;inset:0;z-index:-2;background-image:url('${esc(bg.image)}');background-size:${size};background-position:center;background-repeat:${repeat};background-attachment:${attach}"></div>`;
+  } else if (bg.pattern && PATTERN_CSS[bg.pattern]) {
+    layer = `<div class="pl-bg text-ink/10" style="position:fixed;inset:0;z-index:-2;background-image:${PATTERN_CSS[bg.pattern]}"></div>`;
+  }
+  const scrim = typeof bg.scrim === "number" && bg.scrim > 0
+    ? `<div class="pl-bg-scrim" style="position:fixed;inset:0;z-index:-1;background:#000;opacity:${Math.min(bg.scrim, 0.85)}"></div>`
+    : "";
+  return layer + scrim;
+}
+
+/** Render the whole page body: page background + nav + ordered sections + footer. */
 export function renderApp(content: SiteContent, ctx: RenderCtx): string {
   const sections = resolveOrder(content).map((k) => renderSection(k, content, ctx)).join("\n");
 
@@ -390,7 +435,8 @@ export function renderApp(content: SiteContent, ctx: RenderCtx): string {
     ? `<a href="#rsvp" id="pl-fab" class="fab">${esc(rsvp.title || ctx.labels.rsvpSubmit)}</a>`
     : "";
 
-  return `${renderNav(content.meta.title, content.nav)}
+  return `${pageBackgroundHtml(content)}
+${renderNav(content.meta.title, content.nav)}
 <main>
 ${sections}
 </main>
@@ -418,6 +464,14 @@ document.querySelectorAll('input[data-attending]').forEach(function(el){
 var fab=document.getElementById('pl-fab'),rsvp=document.getElementById('rsvp');
 if(fab&&rsvp&&'IntersectionObserver' in window){
   new IntersectionObserver(function(es){es.forEach(function(en){fab.classList.toggle('is-hidden',en.isIntersecting);});}).observe(rsvp);
+}
+// Scroll-reveal: only hide once JS confirms it can reveal (no-JS stays visible).
+document.documentElement.classList.add('pl-reveal-ready');
+if('IntersectionObserver' in window){
+  var ro=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('is-revealed');ro.unobserve(en.target);}});},{rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){ro.observe(el);});
+}else{
+  document.querySelectorAll('[data-reveal]').forEach(function(el){el.classList.add('is-revealed');});
 }
 </script>`;
 

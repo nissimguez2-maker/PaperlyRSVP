@@ -131,4 +131,20 @@ h1, h2, h3, h4 {
       transform: translateY(0);
     }
   }
+
+  /*
+    Scroll-reveal for sections (the "fluid" feel). Sections only start hidden
+    once JS adds `.pl-reveal-ready` to <html> — so with JS off everything is
+    visible. The IntersectionObserver adds `.is-revealed` as each enters view.
+  */
+  .pl-reveal-ready [data-reveal] {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    will-change: opacity, transform;
+  }
+  .pl-reveal-ready [data-reveal].is-revealed {
+    opacity: 1;
+    transform: none;
+  }
 }

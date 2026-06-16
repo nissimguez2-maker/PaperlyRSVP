@@ -94,11 +94,28 @@ function renderPreviewNow(): void {
       });
     });
     doc.querySelectorAll("[data-editor-form]").forEach((f) => f.addEventListener("submit", (e) => e.preventDefault()));
-    if (selected) {
-      const node = doc.querySelector<HTMLElement>(`[data-pl-section="${selected}"]`);
-      if (node) { node.style.outline = "2px solid var(--site-accent)"; node.style.outlineOffset = "-2px"; }
-    }
+    applySelectionOutline();
   };
+}
+
+/** Get the live preview document (without rebuilding it). */
+function previewDoc(): Document | null {
+  const iframe = document.getElementById("pl-frame-iframe") as HTMLIFrameElement | null;
+  return iframe?.contentDocument ?? null;
+}
+
+/**
+ * Draw the selection outline on the EXISTING preview DOM (no srcdoc rebuild, so
+ * no flash). Called on selection and after each real re-render.
+ */
+function applySelectionOutline(): void {
+  const doc = previewDoc();
+  if (!doc) return;
+  doc.querySelectorAll<HTMLElement>("[data-pl-section]").forEach((el) => {
+    const on = el.getAttribute("data-pl-section") === selected;
+    el.style.outline = on ? "2px solid var(--site-accent)" : "";
+    el.style.outlineOffset = on ? "-2px" : "";
+  });
 }
 
 // --- field builders --------------------------------------------------------
@@ -159,17 +176,65 @@ function range(path: string, value: number, min: number, max: number, step: numb
     <span data-val-for="${path}" class="w-10 text-end text-xs text-neutral-500">${value}</span></div>`;
 }
 
+/** A range whose slider shows `fallback` when the value is unset (optional field). */
+function optRange(path: string, val: unknown, min: number, max: number, step: number, fallback: number): string {
+  return range(path, typeof val === "number" ? val : fallback, min, max, step);
+}
+/** A colour control (swatch + hex), both bound to the same path. Starts at `current`. */
+function colorField(label: string, path: string, current: string): string {
+  return I.group(label,
+    `<div class="flex items-center gap-2">
+      <input type="color" data-path="${path}" value="${esc(current)}" class="h-8 w-10 cursor-pointer rounded border border-neutral-300">
+      <input type="text" data-path="${path}" value="${esc(current)}" class="w-24 rounded-md border border-neutral-300 px-2 py-1 text-xs">
+    </div>`);
+}
+function group(title: string, inner: string): string {
+  return `<div class="mt-2 rounded-lg bg-neutral-50 p-3"><p class="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-400">${esc(title)}</p>${inner}</div>`;
+}
+
 function designHtml(key: SectionKey): string {
   const d = { ...DEFAULT_DESIGN[key], ...((state.content.sections[key] as any)?.design ?? {}) };
   const base = `content.sections.${key}.design`;
-  return `<div class="mt-2 rounded-lg bg-neutral-50 p-3"><p class="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-400">Layout & spacing</p>
+  const nonHero = key !== "hero";
+  const hasImage = key === "hero" || key === "eventDetails" || key === "gallery";
+  const hasButton = key === "hero" || key === "rsvp" || key === "contact" || key === "location";
+
+  const layout = `
     ${I.group("Space above", range(`${base}.spaceTop`, d.spaceTop, 0, 12, 0.25))}
     ${I.group("Space below", range(`${base}.spaceBottom`, d.spaceBottom, 0, 12, 0.25))}
-    ${key !== "hero" ? I.group("Title size", range(`${base}.titleScale`, d.titleScale, 0.7, 1.6, 0.05)) : ""}
-    ${key !== "hero" ? I.group("Alignment", selectEl(`${base}.align`, d.align, [["start", "Start"], ["center", "Center"], ["end", "End"]])) : ""}
-    ${key !== "hero" ? I.group("Width", selectEl(`${base}.width`, d.width, [["narrow", "Narrow"], ["normal", "Normal"], ["wide", "Wide"]])) : ""}
-    ${key !== "hero" ? I.group("Background", selectEl(`${base}.bg`, d.bg, [["bg", "Base"], ["surface", "Surface"], ["primary", "Primary"], ["accent", "Accent"]])) : ""}
-  </div>`;
+    ${I.group("Side padding", optRange(`${base}.padX`, d.padX, 0, 4, 0.1, 1.25))}
+    ${I.group("Min height (screens)", optRange(`${base}.minH`, d.minH, 0, 100, 5, 0))}
+    ${nonHero ? I.group("Overlap previous", optRange(`${base}.overlap`, d.overlap, 0, 6, 0.25, 0)) : ""}
+    ${nonHero ? I.group("Content width", selectEl(`${base}.width`, d.width, [["narrow", "Narrow"], ["normal", "Normal"], ["wide", "Wide"]])) : ""}
+    ${nonHero ? I.group("Fine max-width (rem, 0 = off)", optRange(`${base}.maxW`, d.maxW, 0, 80, 1, 0)) : ""}
+    ${nonHero ? I.group("Item gap", optRange(`${base}.gap`, d.gap, 0.5, 4, 0.25, 1.5)) : ""}
+    ${nonHero ? I.group("Alignment", selectEl(`${base}.align`, d.align, [["start", "Start"], ["center", "Center"], ["end", "End"]])) : ""}
+    ${nonHero ? I.group("Background", selectEl(`${base}.bg`, d.bg, [["bg", "Base"], ["surface", "Surface"], ["primary", "Primary"], ["accent", "Accent"], ["transparent", "Transparent (show page bg)"]])) : ""}
+    ${nonHero ? I.group("Top divider", selectEl(`${base}.divider`, d.divider ?? "none", [["none", "None"], ["line", "Line"], ["gradient", "Soft fade"]])) : ""}
+    ${key === "hero" ? I.group("Hero text position", selectEl(`${base}.heroAnchor`, d.heroAnchor ?? "center", [["top", "Top"], ["center", "Center"], ["bottom", "Bottom"]])) : ""}`;
+
+  const type = `
+    ${I.group("Title size", range(`${base}.titleScale`, d.titleScale, 0.7, 1.6, 0.05))}
+    ${I.group("Title letter-spacing", optRange(`${base}.headingTracking`, d.headingTracking, -0.02, 0.3, 0.01, 0.01))}
+    ${I.group("Title line-height", optRange(`${base}.headingLeading`, d.headingLeading, 0.9, 1.6, 0.05, 1.1))}`;
+
+  const color = `
+    ${colorField("Accent (this section)", `${base}.accentOverride`, d.accentOverride ?? state.theme.colors.accent)}
+    ${colorField("Text (this section)", `${base}.inkOverride`, d.inkOverride ?? state.theme.colors.ink)}`;
+
+  const images = hasImage ? `
+    ${I.group("Image corners", optRange(`${base}.imgRadius`, d.imgRadius, 0, 2.5, 0.1, 0.75))}
+    ${key !== "hero" ? I.group("Image darken", optRange(`${base}.imgScrim`, d.imgScrim, 0, 0.8, 0.05, 0)) : ""}` : "";
+
+  const buttons = hasButton
+    ? I.group("Button style", selectEl(`${base}.buttonStyle`, d.buttonStyle ?? "solid", [["solid", "Solid"], ["outline", "Outline"], ["pill", "Pill"]]))
+    : "";
+
+  return group("Layout & spacing", layout)
+    + group("Type", type)
+    + group("Colour", color)
+    + (images ? group("Images", images) : "")
+    + (buttons ? group("Buttons", buttons) : "");
 }
 
 // --- tabs ------------------------------------------------------------------
@@ -206,7 +271,7 @@ function sectionsTab(): string {
     const schema = SCHEMA_BY_KEY[selected];
     const data = state.content.sections[selected];
     const content = schema.fields.map((f) => fieldHtml(f, `content.sections.${selected}`, (data as any)[f.key])).join("");
-    editor = `<div class="mt-5 border-t border-neutral-200 pt-4"><p class="mb-3 text-sm font-semibold text-neutral-900">${esc(schema.title)}</p>${content}${designHtml(selected)}</div>`;
+    editor = `<div id="pl-controls" style="scroll-margin-top:3.5rem" class="mt-5 border-t border-neutral-200 pt-4"><p class="mb-3 text-sm font-semibold text-neutral-900">${esc(schema.title)}</p>${content}${designHtml(selected)}</div>`;
   }
   return `<div class="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">Sections (drag ▲▼ to reorder)</div>${list}${editor}`;
 }
@@ -230,6 +295,10 @@ function themeTab(): string {
       <span class="flex-1 text-sm text-neutral-700">${esc(label)}</span>
       <input type="text" data-path="theme.colors.${key}" value="${esc(c[key])}" class="w-24 rounded-md border border-neutral-300 px-2 py-1 text-xs">
     </div>`;
+  const bgv: any = state.content.background ?? {};
+  const bgThumb = bgv.image
+    ? `<img src="${esc(bgv.image)}" alt="" class="mb-2 h-20 w-full rounded object-cover border border-neutral-200">`
+    : `<div class="mb-2 flex h-20 w-full items-center justify-center rounded border border-dashed border-neutral-300 text-xs text-neutral-400">No background</div>`;
   return `<div class="text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Colours (hex)</div>
     ${colorRow("primary", "Primary (headings, buttons)")}${colorRow("accent", "Accent (gold/details)")}
     ${colorRow("bg", "Page background")}${colorRow("surface", "Cards / panels")}
@@ -237,6 +306,12 @@ function themeTab(): string {
     <div class="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Fonts (${FONTS.length}+ available)</div>
     ${I.group("Heading font", fontInput("heading", currentFontName(state.theme.fonts.heading)))}
     ${I.group("Body font", fontInput("body", currentFontName(state.theme.fonts.body)))}
+    <div class="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Whole-page background</div>
+    <p class="-mt-2 mb-3 text-[11px] text-neutral-400">Sits behind every section. Set sections to "Transparent" (Layout) to let it flow through.</p>
+    ${I.group("Background image", `${bgThumb}<input type="file" accept="image/*" data-file="content.background.image" class="block w-full text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white">`)}
+    ${I.group("…or a pattern", selectEl("content.background.pattern", bgv.pattern ?? "none", [["none", "None"], ["dots", "Dots"], ["grid", "Grid"]]))}
+    ${I.group("Darken background", optRange("content.background.scrim", bgv.scrim, 0, 0.85, 0.05, 0))}
+    ${I.group("Image fit", selectEl("content.background.size", bgv.size ?? "cover", [["cover", "Cover"], ["contain", "Contain"], ["repeat", "Tile"]]))}
     ${fontDatalist()}`;
 }
 
@@ -274,7 +349,13 @@ function renderPanel(): void {
 // --- actions ---------------------------------------------------------------
 
 function selectSection(key: SectionKey): void {
-  selected = key; tab = "sections"; renderPanel(); renderPreviewNow();
+  selected = key;
+  tab = "sections";
+  renderPanel();
+  // Outline on the LIVE preview DOM — no srcdoc rebuild, so no flash.
+  applySelectionOutline();
+  // Smoothly scroll the controls panel to this element's editor.
+  document.getElementById("pl-controls")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 function markDirty(): void {
   dirty = true;
@@ -409,7 +490,8 @@ export async function initStudio(): Promise<void> {
     }
     if (t.tagName === "SELECT" && t.getAttribute("data-path")) {
       setByPath(state, t.getAttribute("data-path")!, (t as HTMLSelectElement).value);
-      markDirty(); renderPanel(); renderPreviewNow();
+      // Don't rebuild the panel (keeps your scroll position); just refresh the preview.
+      markDirty(); renderPreviewNow();
     }
   });
   panel.addEventListener("click", (e) => {
