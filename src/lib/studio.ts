@@ -28,7 +28,8 @@ interface State {
 
 let state: State;
 let selected: SectionKey | null = null;
-let tab: "sections" | "theme" | "settings" = "sections";
+let tab: "content" | "brand" | "settings" = "content";
+let secTab: "content" | "design" = "content";
 let dirty = false;
 
 // --- undo / redo history ---------------------------------------------------
@@ -308,47 +309,44 @@ function designHtml(key: SectionKey): string {
   const hasImage = key === "hero" || key === "eventDetails" || key === "gallery";
   const hasButton = key === "hero" || key === "rsvp" || key === "contact" || key === "location";
 
-  const layout = `
+  // Basics = the few things you actually touch; Advanced = fine tuning.
+  const basics = `
     ${I.group("Space above", range(`${base}.spaceTop`, d.spaceTop, 0, 12, 0.25))}
     ${I.group("Space below", range(`${base}.spaceBottom`, d.spaceBottom, 0, 12, 0.25))}
-    ${I.group("Side padding", optRange(`${base}.padX`, d.padX, 0, 4, 0.1, 1.25))}
-    ${I.group("Min height (screens)", optRange(`${base}.minH`, d.minH, 0, 100, 5, 0))}
-    ${nonHero ? I.group("Overlap previous", optRange(`${base}.overlap`, d.overlap, 0, 6, 0.25, 0)) : ""}
-    ${nonHero ? I.group("Content width", selectEl(`${base}.width`, d.width, [["narrow", "Narrow"], ["normal", "Normal"], ["wide", "Wide"]])) : ""}
-    ${nonHero ? I.group("Fine max-width (rem, 0 = off)", optRange(`${base}.maxW`, d.maxW, 0, 80, 1, 0)) : ""}
-    ${nonHero ? I.group("Item gap", optRange(`${base}.gap`, d.gap, 0.5, 4, 0.25, 1.5)) : ""}
     ${nonHero ? I.group("Alignment", selectEl(`${base}.align`, d.align, [["start", "Start"], ["center", "Center"], ["end", "End"]])) : ""}
+    ${nonHero ? I.group("Content width", selectEl(`${base}.width`, d.width, [["narrow", "Narrow"], ["normal", "Normal"], ["wide", "Wide"]])) : ""}
     ${nonHero ? I.group("Background", selectEl(`${base}.bg`, d.bg, [["bg", "Base"], ["surface", "Surface"], ["primary", "Primary"], ["accent", "Accent"], ["transparent", "Transparent (show page bg)"]])) : ""}
     ${nonHero ? I.group("Top divider", selectEl(`${base}.divider`, d.divider ?? "none", [["none", "None"], ["line", "Line"], ["gradient", "Soft fade"]])) : ""}
-    ${key === "hero" ? I.group("Hero text position", selectEl(`${base}.heroAnchor`, d.heroAnchor ?? "center", [["top", "Top"], ["center", "Center"], ["bottom", "Bottom"]])) : ""}`;
+    ${key === "hero" ? I.group("Hero text position", selectEl(`${base}.heroAnchor`, d.heroAnchor ?? "center", [["top", "Top"], ["center", "Center"], ["bottom", "Bottom"]])) : ""}
+    ${hasButton ? I.group("Button style", selectEl(`${base}.buttonStyle`, d.buttonStyle ?? "solid", [["solid", "Solid"], ["outline", "Outline"], ["pill", "Pill"]])) : ""}`;
 
   const type = `
     ${I.group("Heading font (this section)", fontPickerButton("section:headingFont", d.headingFont || state.theme.fonts.heading))}
     ${I.group("Body font (this section)", fontPickerButton("section:bodyFont", d.bodyFont || state.theme.fonts.body))}
-    ${I.group("Title size", range(`${base}.titleScale`, d.titleScale, 0.7, 1.6, 0.05))}
-    ${I.group("Title letter-spacing", optRange(`${base}.headingTracking`, d.headingTracking, -0.02, 0.3, 0.01, 0.01))}
-    ${I.group("Title line-height", optRange(`${base}.headingLeading`, d.headingLeading, 0.9, 1.6, 0.05, 1.1))}`;
+    ${I.group("Title size", range(`${base}.titleScale`, d.titleScale, 0.7, 1.6, 0.05))}`;
 
   const color = `
+    <p class="-mt-1 mb-3 text-[11px] leading-relaxed text-pl-muted">These start from your Brand — change any to make this section different.</p>
     ${colorField("Heading colour", `${base}.headingColor`, d.headingColor ?? state.theme.colors.primary)}
     ${colorField("Accent (this section)", `${base}.accentOverride`, d.accentOverride ?? state.theme.colors.accent)}
     ${colorField("Text (this section)", `${base}.inkOverride`, d.inkOverride ?? state.theme.colors.ink)}
     ${nonHero ? colorField("Section background", `${base}.bgHex`, d.bgHex ?? state.theme.colors.bg) : ""}`;
 
-  const images = hasImage ? `
-    ${I.group("Image corners", optRange(`${base}.imgRadius`, d.imgRadius, 0, 2.5, 0.1, 0.75))}
-    ${key !== "hero" ? I.group("Image darken", optRange(`${base}.imgScrim`, d.imgScrim, 0, 0.8, 0.05, 0)) : ""}` : "";
+  const advanced = `
+    ${I.group("Side padding", optRange(`${base}.padX`, d.padX, 0, 4, 0.1, 1.25))}
+    ${nonHero ? I.group("Max content width", optRange(`${base}.maxW`, d.maxW, 0, 80, 1, 0)) : ""}
+    ${nonHero ? I.group("Item gap", optRange(`${base}.gap`, d.gap, 0.5, 4, 0.25, 1.5)) : ""}
+    ${I.group("Section height", optRange(`${base}.minH`, d.minH, 0, 100, 5, 0))}
+    ${nonHero ? I.group("Overlap previous section", optRange(`${base}.overlap`, d.overlap, 0, 6, 0.25, 0)) : ""}
+    ${I.group("Title letter-spacing", optRange(`${base}.headingTracking`, d.headingTracking, -0.02, 0.3, 0.01, 0.01))}
+    ${I.group("Title line-height", optRange(`${base}.headingLeading`, d.headingLeading, 0.9, 1.6, 0.05, 1.1))}
+    ${hasImage ? I.group("Image corners", optRange(`${base}.imgRadius`, d.imgRadius, 0, 2.5, 0.1, 0.75)) : ""}
+    ${hasImage && key !== "hero" ? I.group("Image darken", optRange(`${base}.imgScrim`, d.imgScrim, 0, 0.8, 0.05, 0)) : ""}`;
 
-  const buttons = hasButton
-    ? I.group("Button style", selectEl(`${base}.buttonStyle`, d.buttonStyle ?? "solid", [["solid", "Solid"], ["outline", "Outline"], ["pill", "Pill"]]))
-    : "";
-
-  return `<div class="mt-5 mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-pl-gold"><span class="h-px flex-1 bg-pl-line"></span>Style<span class="h-px flex-1 bg-pl-line"></span></div>`
-    + group("Layout & spacing", layout, true)
+  return group("Basics", basics, true)
     + group("Type", type)
     + group("Colour", color)
-    + (images ? group("Images", images) : "")
-    + (buttons ? group("Buttons", buttons) : "");
+    + group("Advanced", advanced);
 }
 
 // --- tabs ------------------------------------------------------------------
@@ -368,6 +366,22 @@ function emptySection(key: SectionKey): any {
   return base;
 }
 
+/** Outline grouping by role (presentational only — render order stays content.order). */
+const SECTION_GROUPS: { label: string; keys: SectionKey[] }[] = [
+  { label: "Invitation", keys: ["pages"] },
+  { label: "Page content", keys: ["custom", "hero", "eventDetails", "schedule", "location", "gallery"] },
+  { label: "Guest actions", keys: ["rsvp", "contact"] },
+  { label: "Help", keys: ["faq"] },
+];
+/** Friendlier outline/header names (fall back to the schema title). */
+const SECTION_LABEL: Partial<Record<SectionKey, string>> = {
+  pages: "Invitation (PDF)",
+  custom: "Free blocks",
+};
+function sectionLabel(key: SectionKey): string {
+  return SECTION_LABEL[key] ?? SCHEMA_BY_KEY[key]?.title ?? key;
+}
+
 /** Tasteful monochrome line-glyphs (inherit currentColor), one per section. */
 const ICON_WRAP = (d: string) =>
   `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true" class="h-[18px] w-[18px]">${d}</svg>`;
@@ -385,52 +399,97 @@ const SECTION_ICON: Record<SectionKey, string> = {
 };
 
 /**
- * Two-level panel (like a design tool):
- *  - no section selected → the list of sections (cards) to manage/reorder,
- *  - a section selected → its properties (content + style), with a Back link.
- * This keeps the controls at the top, so nothing scroll-jumps on select.
+ * Content panel. Two views:
+ *  - no section selected → the OUTLINE (sections grouped by role, off/unused
+ *    blocks tucked under "+ Add a block"),
+ *  - a section selected → its editor with a switcher header + Content / Design
+ *    sub-tabs, so everyday text/photos are separate from fine styling.
  */
 function sectionsTab(): string {
-  // Properties view for the selected section.
-  if (selected && state.content.sections[selected]) {
-    const schema = SCHEMA_BY_KEY[selected];
-    const data = state.content.sections[selected];
-    let body: string;
-    if (selected === "custom") {
-      body = customEditor();
-    } else {
-      body = schema.fields.map((f) => fieldHtml(f, `content.sections.${selected}`, getByPath(data, f.key))).join("");
-      if (selected === "rsvp") body += customFieldsEditor() + wordingEditor("rsvp");
-      if (selected === "contact") body += wordingEditor("contact");
-    }
-    return `<div id="pl-controls">
-      <button data-action="sec-back" class="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-pl-ink-2 transition-colors hover:text-pl-gold">
-        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="h-3.5 w-3.5"><path d="M10 3.5 5.5 8 10 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        All sections
-      </button>
-      <div class="mb-5 flex items-center gap-2.5">
-        <span class="grid h-9 w-9 place-items-center rounded-xl bg-pl-ink text-pl-gold-2">${SECTION_ICON[selected]}</span>
-        <span class="font-pl-display text-lg font-semibold text-pl-ink">${esc(schema.title)}</span>
-      </div>
-      ${body}${designHtml(selected)}
-    </div>`;
-  }
+  return (selected && state.content.sections[selected]) ? sectionEditor() : outlineView();
+}
 
-  // List view — rows are draggable to reorder.
-  const list = orderedKeys().map((key, i) => {
-    const s = state.content.sections[key];
-    const exists = !!s;
-    const on = exists && s!.enabled !== false;
-    const name = SCHEMA_BY_KEY[key]?.title ?? key;
-    return `<div draggable="true" data-dnd="sections" data-i="${i}" class="group flex items-center gap-2 rounded-xl border border-pl-line bg-pl-paper p-2.5 transition-shadow hover:border-pl-gold/40 hover:shadow-sm ${on ? "" : "opacity-55"}">
-      <span data-handle title="Drag to reorder" class="cursor-grab select-none px-1 text-pl-muted/60 hover:text-pl-ink-2">⠿</span>
-      <span class="grid h-8 w-8 place-items-center rounded-lg bg-pl-wash text-pl-gold">${SECTION_ICON[key]}</span>
-      <button data-action="sec-select" data-key="${key}" class="flex-1 truncate text-start text-sm font-medium text-pl-ink ${exists ? "" : "italic text-pl-muted"}">${esc(name)}</button>
-      <button data-action="sec-toggle" data-key="${key}" title="Show / hide" class="chip chip--sm chip--soft ${exists ? (on ? "chip--success" : "chip--default") : "chip--accent"}">${exists ? (on ? "On" : "Off") : "Add"}</button>
+/** The grouped page outline. Rows are draggable to reorder the page. */
+function outlineView(): string {
+  const order = orderedKeys();
+  const idxOf = (k: SectionKey) => order.indexOf(k);
+  const missing: SectionKey[] = [];
+
+  const groups = SECTION_GROUPS.map((g) => {
+    g.keys.filter((k) => !state.content.sections[k]).forEach((k) => missing.push(k));
+    const existing = g.keys.filter((k) => !!state.content.sections[k]).sort((a, b) => idxOf(a) - idxOf(b));
+    if (!existing.length) return "";
+    const rows = existing.map((key) => {
+      const on = state.content.sections[key]!.enabled !== false;
+      return `<div draggable="true" data-dnd="sections" data-i="${idxOf(key)}" class="group flex items-center gap-2 rounded-xl border border-pl-line bg-pl-paper p-2.5 transition-shadow hover:border-pl-gold/40 hover:shadow-sm ${on ? "" : "opacity-55"}">
+        <span data-handle title="Drag to reorder" class="cursor-grab select-none px-1 text-pl-muted/60 hover:text-pl-ink-2">⠿</span>
+        <span class="grid h-8 w-8 place-items-center rounded-lg bg-pl-wash text-pl-gold">${SECTION_ICON[key]}</span>
+        <button data-action="sec-select" data-key="${key}" class="flex-1 truncate text-start text-sm font-medium text-pl-ink">${esc(sectionLabel(key))}</button>
+        <button data-action="sec-toggle" data-key="${key}" title="Show / hide" class="chip chip--sm chip--soft ${on ? "chip--success" : "chip--default"}">${on ? "On" : "Off"}</button>
+      </div>`;
+    }).join("");
+    return `<div class="mb-4">
+      <div class="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-pl-muted">${esc(g.label)}</div>
+      <div data-dndlist="sections" class="space-y-2">${rows}</div>
     </div>`;
   }).join("");
-  return `<p class="mb-3 text-xs leading-relaxed text-pl-muted">Click a section to edit it (or click it in the preview). Drag ⠿ to reorder.</p>
-    <div data-dndlist="sections" class="space-y-2">${list}</div>`;
+
+  const addBlock = missing.length ? `
+    <details class="pl-group mt-1 overflow-hidden rounded-xl border border-dashed border-pl-line bg-pl-wash/20">
+      <summary class="flex cursor-pointer list-none items-center justify-between px-3.5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-pl-ink-2 transition-colors hover:bg-pl-wash/40">
+        + Add a block<span class="pl-caret text-pl-gold transition-transform">▾</span></summary>
+      <div class="flex flex-wrap gap-2 px-3.5 pb-3.5 pt-2.5">
+        ${missing.map((key) => `<button data-action="sec-toggle" data-key="${key}" class="button button--ghost button--sm">+ ${esc(sectionLabel(key))}</button>`).join("")}
+      </div>
+    </details>` : "";
+
+  return `<p class="mb-3 text-xs leading-relaxed text-pl-muted">Click a section to edit it (or click it in the preview). Drag ⠿ to reorder the page.</p>
+    ${groups}${addBlock}`;
+}
+
+/** The selected section's editor: switcher header + Content / Design sub-tabs. */
+function sectionEditor(): string {
+  const key = selected!;
+  const schema = SCHEMA_BY_KEY[key];
+  const data = state.content.sections[key];
+  const on = (data as any)?.enabled !== false;
+  const existing = orderedKeys().filter((k) => !!state.content.sections[k]);
+  const switcher = `<select data-secnav class="input w-full font-pl-display text-base font-semibold text-pl-ink">
+    ${existing.map((k) => `<option value="${k}"${k === key ? " selected" : ""}>${esc(sectionLabel(k))}</option>`).join("")}</select>`;
+
+  const subTab = (id: "content" | "design", label: string) =>
+    `<button data-sectab="${id}" class="flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${secTab === id ? "bg-pl-paper text-pl-ink shadow-sm" : "text-pl-ink-2 hover:text-pl-ink"}">${label}</button>`;
+
+  let body: string;
+  if (secTab === "content") {
+    if (key === "custom") {
+      body = customEditor();
+    } else {
+      body = schema.fields.map((f) => fieldHtml(f, `content.sections.${key}`, getByPath(data, f.key))).join("");
+      if (key === "rsvp") body += customFieldsEditor() + wordingEditor("rsvp");
+      if (key === "contact") body += wordingEditor("contact");
+    }
+  } else {
+    body = designHtml(key);
+  }
+
+  return `<div id="pl-controls">
+    <div class="mb-3 flex items-center justify-between gap-2">
+      <button data-action="sec-back" class="inline-flex items-center gap-1.5 text-xs font-medium text-pl-ink-2 transition-colors hover:text-pl-gold">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="h-3.5 w-3.5"><path d="M10 3.5 5.5 8 10 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Content</button>
+      <span class="flex items-center gap-1">
+        <button data-action="sec-up" data-key="${key}" title="Move up" class="button button--ghost button--icon-only button--sm">↑</button>
+        <button data-action="sec-down" data-key="${key}" title="Move down" class="button button--ghost button--icon-only button--sm">↓</button>
+        <button data-action="sec-toggle" data-key="${key}" title="Show / hide" class="chip chip--sm chip--soft ${on ? "chip--success" : "chip--default"}">${on ? "On" : "Off"}</button>
+      </span>
+    </div>
+    <div class="mb-4 flex items-center gap-2.5">
+      <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-pl-ink text-pl-gold-2">${SECTION_ICON[key]}</span>
+      ${switcher}
+    </div>
+    <div class="mb-4 flex gap-1 rounded-xl bg-pl-wash/50 p-1">${subTab("content", "Content")}${subTab("design", "Design")}</div>
+    ${body}
+  </div>`;
 }
 
 /** Bespoke editor for the "Free blocks" section: add/drag/edit text, image & PDF blocks. */
@@ -683,16 +742,16 @@ function settingsTab(): string {
     ${I.group("Credit line", I.input("content.footer.credit", state.content.footer?.credit ?? ""))}`;
 }
 
-const TAB_TITLE: Record<"sections" | "theme" | "settings", string> = {
-  sections: "Sections",
-  theme: "Theme & background",
+const TAB_TITLE: Record<"content" | "brand" | "settings", string> = {
+  content: "Content",
+  brand: "Brand",
   settings: "Settings",
 };
 
 function renderPanel(): void {
   const panel = document.getElementById("pl-panel");
   if (!panel) return;
-  const body = tab === "sections" ? sectionsTab() : tab === "theme" ? themeTab() : settingsTab();
+  const body = tab === "content" ? sectionsTab() : tab === "brand" ? themeTab() : settingsTab();
   panel.innerHTML = `<div class="sticky top-0 z-10 border-b border-pl-line bg-pl-paper/95 px-4 py-3 backdrop-blur">
       <h2 class="font-pl-display text-base font-semibold tracking-tight text-pl-ink">${TAB_TITLE[tab]}</h2></div>
     <div class="p-4">${body}</div>`;
@@ -710,7 +769,8 @@ function updateRail(): void {
 
 function selectSection(key: SectionKey): void {
   selected = key;
-  tab = "sections";
+  tab = "content";
+  secTab = "content";
   renderPanel();
   // Properties render at the TOP of the panel, so just reset the panel scroll.
   document.getElementById("pl-panel")?.scrollTo({ top: 0 });
@@ -786,19 +846,31 @@ function handleAction(action: string, el: HTMLElement): void {
     applySelectionOutline();
     return;
   }
-  if (action.startsWith("sec-") && key) {
-    const order = orderedKeys();
-    const idx = order.indexOf(key);
-    if (action === "sec-up" && idx > 0) [order[idx - 1], order[idx]] = [order[idx], order[idx - 1]];
-    if (action === "sec-down" && idx < order.length - 1) [order[idx + 1], order[idx]] = [order[idx], order[idx + 1]];
-    if (action === "sec-up" || action === "sec-down") state.content.order = order;
-    if (action === "sec-select") selected = key;
-    if (action === "sec-toggle") {
-      const s = state.content.sections[key];
-      if (!s) (state.content.sections as any)[key] = emptySection(key);
-      else s.enabled = s.enabled === false;
-    }
+  if (action === "sec-select" && key) {
+    selected = key; secTab = "content";
+    renderPanel(); applySelectionOutline();
+    return;
+  }
+  if (action === "sec-toggle" && key) {
+    const s = state.content.sections[key];
+    if (!s) (state.content.sections as any)[key] = emptySection(key);
+    else s.enabled = s.enabled === false;
     markDirty(); renderPanel(); renderPreviewNow();
+    return;
+  }
+  if ((action === "sec-up" || action === "sec-down") && key) {
+    // Swap with the nearest VISIBLE neighbour (skipping hidden/uncreated ones)
+    // so the arrow always makes a visible move on the page.
+    const order = orderedKeys();
+    const existing = order.filter((k) => !!state.content.sections[k]);
+    const ei = existing.indexOf(key);
+    const swapWith = action === "sec-up" ? existing[ei - 1] : existing[ei + 1];
+    if (swapWith) {
+      const a = order.indexOf(key), b = order.indexOf(swapWith);
+      [order[a], order[b]] = [order[b], order[a]];
+      state.content.order = order;
+      markDirty(); renderPanel(); renderPreviewNow();
+    }
     return;
   }
   if (action.startsWith("list-") && path) {
@@ -1071,6 +1143,8 @@ export async function initStudio(): Promise<void> {
   });
   panel.addEventListener("change", async (e) => {
     const t = e.target as HTMLElement;
+    // Section switcher (jump to another section) — view-only navigation.
+    if (t.getAttribute?.("data-secnav")) { selectSection((t as HTMLSelectElement).value as SectionKey); return; }
     const filePath = t.getAttribute?.("data-file");
     if (filePath) {
       const file = (t as HTMLInputElement).files?.[0];
@@ -1109,6 +1183,9 @@ export async function initStudio(): Promise<void> {
       openFontPicker(fp.dataset.current || "", (name) => applyFontPick(target, name));
       return;
     }
+    // Section sub-tab (Content / Design) — view-only, no data change.
+    const st = (e.target as HTMLElement).closest<HTMLElement>("[data-sectab]");
+    if (st) { e.preventDefault(); secTab = st.getAttribute("data-sectab") as typeof secTab; renderPanel(); return; }
     const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-action],[data-tab]");
     if (!btn) return;
     e.preventDefault();
