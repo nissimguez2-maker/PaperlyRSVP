@@ -94,6 +94,36 @@
   --site-font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+/*
+  HeroUI v3 chrome theming. The control panel + Studio load HeroUI's precompiled
+  stylesheet (/heroui.css); these unlayered :root overrides remap HeroUI's theme
+  variables to the Paperly palette (gold accent, warm paper surfaces, ink text,
+  bordered fields, softer radius). Unlayered so they win over HeroUI's layered
+  defaults regardless of stylesheet order. Inert on rendered client sites, which
+  never load HeroUI.
+*/
+:root {
+  --background: #f3efe7;
+  --foreground: #211d17;
+  --surface: #fcfaf5;
+  --surface-foreground: #211d17;
+  --overlay: #fcfaf5;
+  --overlay-foreground: #211d17;
+  --muted: #8c8377;
+  --default: #efe7d8;
+  --default-foreground: #4a4339;
+  --accent: #a87f46;
+  --accent-foreground: #fffdf9;
+  --field-background: #fcfaf5;
+  --field-foreground: #211d17;
+  --field-placeholder: #9a9082;
+  --field-border: #e7dfd1;
+  --field-border-width: 1px;
+  --success: #5e7363;
+  --success-foreground: #fffdf9;
+  --radius: 0.625rem;
+}
+
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%; /* don't auto-zoom text on rotate (mobile) */

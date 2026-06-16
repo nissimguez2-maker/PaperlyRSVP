@@ -1,6 +1,8 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 
+import react from '@astrojs/react';
+
 // Paperly — hosted control panel.
 //
 // Astro builds the static "operator" pages (the /admin dashboard and the
@@ -14,7 +16,10 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
   output: 'static',
   site: process.env.SITE_URL || 'https://example.com',
+
   // Emit /admin.html, /admin/edit.html, /thank-you.html so those routes serve
   // directly (no trailing-slash redirects) — keeps the editor's ?slug= links clean.
   build: { format: 'file' },
+
+  integrations: [react()],
 });

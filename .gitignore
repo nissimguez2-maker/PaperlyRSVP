@@ -8,6 +8,9 @@ node_modules/
 # generated: Tailwind CLI compiles the stylesheet here
 public/site.css
 
+# generated: HeroUI's precompiled stylesheet, copied from node_modules at build
+public/heroui.css
+
 # env / secrets
 .env
 .env.*
