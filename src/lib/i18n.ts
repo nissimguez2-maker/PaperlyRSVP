@@ -100,7 +100,35 @@ const he: Dictionary = {
   backHome: "חזרה להזמנה",
 };
 
-const dictionaries: Record<Language, Dictionary> = { en, he };
+const fr: Dictionary = {
+  fullName: "Nom complet",
+  email: "E-mail",
+  phone: "Téléphone",
+  attending: "Serez-vous présent ?",
+  attendingYes: "Avec joie, je serai présent",
+  attendingNo: "Je ne pourrai malheureusement pas venir",
+  guests: "Nombre d'invités",
+  guestNames: "Noms des invités",
+  guestNamesHint: "Indiquez toutes les personnes de votre groupe.",
+  dietary: "Restrictions alimentaires / cacherout",
+  dietaryHint: "Allergies, végétarien, exigences cacher, etc.",
+  message: "Message",
+  rsvpSubmit: "Envoyer ma réponse",
+  contactName: "Nom",
+  contactEmail: "E-mail",
+  contactMessage: "Message",
+  contactSubmit: "Envoyer le message",
+  required: "obligatoire",
+  sending: "Envoi…",
+  directions: "Itinéraire",
+  thankYouRsvpTitle: "Merci !",
+  thankYouRsvpBody: "Votre réponse a bien été reçue. Nous avons hâte de célébrer avec vous.",
+  thankYouContactTitle: "Message envoyé",
+  thankYouContactBody: "Merci de nous avoir écrit — nous vous répondrons bientôt.",
+  backHome: "Retour à l'invitation",
+};
+
+const dictionaries: Record<Language, Dictionary> = { en, he, fr };
 
 /** Get the base dictionary for a language (falls back to English). */
 export function getDictionary(language: Language): Dictionary {

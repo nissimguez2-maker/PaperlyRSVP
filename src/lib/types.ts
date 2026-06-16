@@ -7,7 +7,7 @@
  */
 
 export type Direction = "ltr" | "rtl";
-export type Language = "en" | "he";
+export type Language = "en" | "he" | "fr";
 
 /** Event types we have terminology/affordances for. Extend freely. */
 export type EventType =
@@ -161,9 +161,13 @@ export interface EventDetailsSection extends Toggleable {
   /**
    * Optional "Add to calendar". When `start` is set, the section shows Google
    * Calendar + Apple/Outlook (.ics) buttons. Times are local datetime strings
-   * (e.g. "2027-01-01T18:00"); end defaults to start + 3h.
+   * (e.g. "2027-01-01T18:00"); end defaults to start + 3h. The *Label fields
+   * override the (otherwise built-in) button texts.
    */
-  calendar?: { start?: string; end?: string; location?: string };
+  calendar?: {
+    start?: string; end?: string; location?: string;
+    addLabel?: string; googleLabel?: string; appleLabel?: string;
+  };
 }
 
 export interface ScheduleItem {
@@ -191,6 +195,8 @@ export interface LocationSection extends Toggleable {
   coords?: string;
   /** Which map buttons to show (default: all on). */
   maps?: { google?: boolean; waze?: boolean; apple?: boolean; embed?: boolean };
+  /** Override the map button texts (default: Google Maps / Waze / Apple Maps). */
+  mapLabels?: { google?: string; waze?: string; apple?: string };
   /** Manual override link (rarely needed; address is preferred). */
   mapUrl?: string;
   /** Optional <iframe> embed src for an inline map. */
@@ -222,6 +228,8 @@ export interface CustomBlock {
   /** pdf → rendered page images + the original */
   images?: { src: string; alt?: string }[];
   pdfUrl?: string;
+  /** Override the "Download (PDF)" button text for this block. */
+  downloadLabel?: string;
 }
 
 export interface CustomSection extends Toggleable {
@@ -243,6 +251,8 @@ export interface PagesSection extends Toggleable {
   images: { src: string; alt?: string }[];
   /** Original uploaded PDF (for the "Download invitation" button). */
   pdfUrl?: string;
+  /** Override the "Download invitation (PDF)" button text. */
+  downloadLabel?: string;
 }
 
 /** Labels for the RSVP form. Any omitted label falls back to the i18n default
@@ -294,6 +304,22 @@ export interface RsvpSection extends Toggleable {
     dietary?: boolean;
     message?: boolean;
   };
+  /**
+   * Custom questions you define (e.g. "Who is driving?"). Their answers are
+   * stored and appear as columns in the responses table + CSV export.
+   */
+  customFields?: RsvpCustomField[];
+}
+
+export interface RsvpCustomField {
+  /** Stable id (column key). */
+  id: string;
+  /** The question shown to guests (also the CSV column header). */
+  label: string;
+  type: "text" | "number" | "boolean" | "select";
+  /** Choices for type "select". */
+  options?: string[];
+  required?: boolean;
 }
 
 export interface ContactLabels {

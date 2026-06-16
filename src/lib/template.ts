@@ -25,8 +25,10 @@ export interface TemplateOptions {
 }
 
 export function starterContent(slug: string, o: TemplateOptions): SiteContent {
-  const en = o.language === "en";
-  const t = <T,>(a: T, b: T): T => (en ? a : b);
+  // Hebrew uses the 2nd value; English & French use the 1st (the wireframe
+  // placeholders are English — the guest-facing form text comes from i18n,
+  // which is fully translated incl. French).
+  const t = <T,>(a: T, b: T): T => (o.language === "he" ? b : a);
   const pdf = o.layout !== "structured"; // PDF-first is the default
   // Role labels (bilingual). Used as neutral placeholders everywhere.
   const L = {

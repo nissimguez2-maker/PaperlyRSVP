@@ -78,7 +78,11 @@ function calendarButtons(content: SiteContent, data: EventDetailsSection, bodyCl
   }
   const title = content.meta.title || data.title || "Event";
   const loc = cal.location || content.sections.location?.venue || content.sections.location?.address || "";
-  const labels = { add: content.language === "he" ? "הוספה ליומן" : "Add to calendar", g: "Google", a: "Apple / Outlook" };
+  const labels = {
+    add: cal.addLabel || (content.language === "he" ? "הוספה ליומן" : "Add to calendar"),
+    g: cal.googleLabel || "Google",
+    a: cal.appleLabel || "Apple / Outlook",
+  };
 
   const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&location=${encodeURIComponent(loc)}`;
   const ics = [
@@ -227,6 +231,7 @@ function renderSchedule(data: ScheduleSection): string {
 function renderLocation(data: LocationSection, labels: Dictionary): string {
   const p = palette("location", data.design);
   const m = data.maps ?? {};
+  const ml = data.mapLabels ?? {};
   const query = (data.coords && data.coords.trim()) || (data.address ? data.address.replace(/\n/g, ", ") : "");
   const enc = encodeURIComponent(query);
   const coordsEnc = data.coords ? encodeURIComponent(data.coords.trim()) : "";
@@ -234,9 +239,9 @@ function renderLocation(data: LocationSection, labels: Dictionary): string {
     `<a href="${href}" target="_blank" rel="noopener" class="btn-outline">${esc(label)}</a>`;
   const buttons: string[] = [];
   if (query) {
-    if (m.google !== false) buttons.push(btn(`https://www.google.com/maps/search/?api=1&query=${enc}`, "Google Maps"));
-    if (m.waze !== false) buttons.push(btn(coordsEnc ? `https://waze.com/ul?ll=${coordsEnc}&navigate=yes` : `https://waze.com/ul?q=${enc}&navigate=yes`, "Waze"));
-    if (m.apple !== false) buttons.push(btn(`https://maps.apple.com/?q=${enc}`, "Apple Maps"));
+    if (m.google !== false) buttons.push(btn(`https://www.google.com/maps/search/?api=1&query=${enc}`, ml.google || "Google Maps"));
+    if (m.waze !== false) buttons.push(btn(coordsEnc ? `https://waze.com/ul?ll=${coordsEnc}&navigate=yes` : `https://waze.com/ul?q=${enc}&navigate=yes`, ml.waze || "Waze"));
+    if (m.apple !== false) buttons.push(btn(`https://maps.apple.com/?q=${enc}`, ml.apple || "Apple Maps"));
   } else if (data.mapUrl) {
     buttons.push(btn(esc(data.mapUrl), labels.directions));
   }
@@ -272,7 +277,7 @@ function renderPages(data: PagesSection, content: SiteContent): string {
     .map((im, i) => `<img src="${esc(im.src)}" alt="${esc(im.alt ?? `Invitation page ${i + 1}`)}" loading="${i === 0 ? "eager" : "lazy"}" class="mx-auto block w-full" style="${rad}">`)
     .join("");
   const dl = data.pdfUrl
-    ? `<div class="mt-8 text-center"><a href="${esc(data.pdfUrl)}" target="_blank" rel="noopener" class="btn-outline">${content.language === "he" ? "להורדת ההזמנה (PDF)" : "Download invitation (PDF)"}</a></div>`
+    ? `<div class="mt-8 text-center"><a href="${esc(data.pdfUrl)}" target="_blank" rel="noopener" class="btn-outline">${esc(data.downloadLabel || (content.language === "he" ? "להורדת ההזמנה (PDF)" : "Download invitation (PDF)"))}</a></div>`
     : "";
   const header = (data.eyebrow || data.title || data.body) ? `
     <div class="mb-8 text-center">
@@ -304,7 +309,7 @@ function renderCustom(data: CustomSection, content: SiteContent): string {
     }
     // pdf block: stacked page images + optional download
     const imgs = (b.images ?? []).map((im) => `<img src="${esc(im.src)}" alt="" loading="lazy" class="mx-auto block w-full">`).join("");
-    const dl = b.pdfUrl ? `<div class="mt-4 text-center"><a href="${esc(b.pdfUrl)}" target="_blank" rel="noopener" class="btn-outline">${content.language === "he" ? "להורדה (PDF)" : "Download (PDF)"}</a></div>` : "";
+    const dl = b.pdfUrl ? `<div class="mt-4 text-center"><a href="${esc(b.pdfUrl)}" target="_blank" rel="noopener" class="btn-outline">${esc(b.downloadLabel || (content.language === "he" ? "להורדה (PDF)" : "Download (PDF)"))}</a></div>` : "";
     return imgs ? `<div class="space-y-3">${imgs}${dl}</div>` : "";
   }).filter(Boolean).join(`<div class="h-10"></div>`);
 
@@ -388,6 +393,27 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
     : `<fieldset><legend class="field-label">${esc(L.attending)} ${star}</legend>${attending("attending")}</fieldset>
        ${guestSelect("guests", "rsvp-g")}`;
 
+  // Custom questions defined by the operator → stored + shown as table/CSV columns.
+  const cfs = (data.customFields ?? []).filter((f) => f && f.id && f.label);
+  const customHtml = cfs.length ? `
+      <input type="hidden" name="cf_ids" value="${esc(cfs.map((f) => f.id).join(","))}">
+      ${cfs.map((f, i) => {
+        const id = `rsvp-cf-${i}`;
+        const req = f.required ? "required" : "";
+        const reqStar = f.required ? ` ${star}` : "";
+        let control: string;
+        if (f.type === "select") {
+          const opts = `<option value="">—</option>` + (f.options ?? []).map((o) => `<option value="${esc(o)}">${esc(o)}</option>`).join("");
+          control = `<select class="field-input" id="${id}" name="cf_${esc(f.id)}" ${req}>${opts}</select>`;
+        } else if (f.type === "boolean") {
+          control = `<select class="field-input" id="${id}" name="cf_${esc(f.id)}" ${req}><option value="">—</option><option value="Yes">Yes</option><option value="No">No</option></select>`;
+        } else {
+          control = `<input class="field-input" id="${id}" name="cf_${esc(f.id)}" type="${f.type === "number" ? "number" : "text"}" ${req}>`;
+        }
+        return `<div><input type="hidden" name="cflabel_${esc(f.id)}" value="${esc(f.label)}">
+          <label class="field-label" for="${id}">${esc(f.label)}${reqStar}</label>${control}</div>`;
+      }).join("")}` : "";
+
   const form = `
     <form ${formAttrs("/api/rsvp", ctx.editor)} class="space-y-5 rounded-2xl border border-line bg-surface p-5 text-start shadow-sm sm:p-8">
       <input type="hidden" name="site_id" value="${esc(content.siteId)}">
@@ -404,6 +430,7 @@ function renderRsvp(data: RsvpSection, content: SiteContent, ctx: RenderCtx): st
       ${show("guestNames") ? `<div><label class="field-label" for="rsvp-guest-names">${esc(L.guestNames)}</label><textarea class="field-input" id="rsvp-guest-names" name="guest_names" rows="2" placeholder="${esc(L.guestNamesHint)}"></textarea></div>` : ""}
       ${show("dietary") ? `<div><label class="field-label" for="rsvp-dietary">${esc(L.dietary)}</label><textarea class="field-input" id="rsvp-dietary" name="dietary" rows="2" placeholder="${esc(L.dietaryHint)}"></textarea></div>` : ""}
       ${show("message") ? `<div><label class="field-label" for="rsvp-message">${esc(L.message)}</label><textarea class="field-input" id="rsvp-message" name="message" rows="3"></textarea></div>` : ""}
+      ${customHtml}
       ${ts}
       <button type="submit" class="${buttonClass("rsvp", data.design)} w-full">${esc(L.rsvpSubmit)}</button>
     </form>`;

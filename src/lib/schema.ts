@@ -10,8 +10,8 @@ import type { SectionKey } from "./types";
 
 /** All field variants may carry optional `help` text (shown as a "?" tooltip). */
 export type Field =
-  | { kind: "text"; key: string; label: string; help?: string }
-  | { kind: "textarea"; key: string; label: string; help?: string }
+  | { kind: "text"; key: string; label: string; help?: string; placeholder?: string }
+  | { kind: "textarea"; key: string; label: string; help?: string; placeholder?: string }
   | { kind: "image"; key: string; label: string; help?: string }
   | { kind: "number"; key: string; label: string; help?: string; min?: number; max?: number; step?: number }
   | { kind: "datetime"; key: string; label: string; help?: string }
@@ -35,6 +35,7 @@ export const SECTION_SCHEMAS: SectionSchema[] = [
       { kind: "pdf", key: "images", label: "Upload your invitation PDF" },
       { kind: "text", key: "title", label: "Heading above (optional)" },
       { kind: "textarea", key: "body", label: "Text above (optional)" },
+      { kind: "text", key: "downloadLabel", label: "Download-button text", placeholder: "Download invitation (PDF)", help: "Shown only when a PDF is uploaded. Leave blank for the default." },
       {
         kind: "list", key: "images", label: "Pages", itemLabel: "Page",
         item: [{ kind: "image", key: "src", label: "Image" }],
@@ -76,6 +77,9 @@ export const SECTION_SCHEMAS: SectionSchema[] = [
       { kind: "datetime", key: "calendar.start", label: "Add-to-calendar: start" },
       { kind: "datetime", key: "calendar.end", label: "Add-to-calendar: end (optional)" },
       { kind: "text", key: "calendar.location", label: "Add-to-calendar: location (optional)" },
+      { kind: "text", key: "calendar.addLabel", label: "Calendar heading text", placeholder: "Add to calendar" },
+      { kind: "text", key: "calendar.googleLabel", label: "Google button text", placeholder: "Google" },
+      { kind: "text", key: "calendar.appleLabel", label: "Apple/Outlook button text", placeholder: "Apple / Outlook" },
     ],
   },
   {
@@ -109,6 +113,9 @@ export const SECTION_SCHEMAS: SectionSchema[] = [
       { kind: "toggle", key: "maps.waze", label: "Show Waze button" },
       { kind: "toggle", key: "maps.apple", label: "Show Apple Maps button" },
       { kind: "toggle", key: "maps.embed", label: "Show inline map" },
+      { kind: "text", key: "mapLabels.google", label: "Google button text", placeholder: "Google Maps" },
+      { kind: "text", key: "mapLabels.waze", label: "Waze button text", placeholder: "Waze" },
+      { kind: "text", key: "mapLabels.apple", label: "Apple button text", placeholder: "Apple Maps" },
     ],
   },
   {

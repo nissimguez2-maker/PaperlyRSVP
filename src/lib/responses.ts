@@ -7,7 +7,7 @@ import { esc } from "./render";
 interface Rsvp {
   full_name: string; attending: string; guests: number | null; guest_names: string | null;
   email: string | null; phone: string | null; dietary: string | null; message: string | null;
-  event_label: string | null; created_at: string;
+  event_label: string | null; extra: string | null; created_at: string;
 }
 interface Contact { name: string; email: string | null; message: string; created_at: string; }
 
@@ -37,14 +37,24 @@ export async function initResponses(): Promise<void> {
   const yes = rsvps.filter((r) => r.attending === "yes");
   const guests = yes.reduce((n, r) => n + (r.guests || 0), 0);
 
-  const rsvpRows = rsvps.map((r) => `<tr>
+  // Per-invitation custom-question columns: the union of question labels actually
+  // collected, parsed from each row's `extra` JSON (keyed by the question label).
+  const parsed = rsvps.map((r) => {
+    try { return r.extra ? (JSON.parse(r.extra) as Record<string, string>) : {}; } catch { return {}; }
+  });
+  const extraKeys: string[] = [];
+  for (const o of parsed) for (const k of Object.keys(o)) if (!extraKeys.includes(k)) extraKeys.push(k);
+
+  const rsvpRows = rsvps.map((r, i) => `<tr>
     ${cell(r.created_at?.slice(0, 16))}${cell(r.event_label)}${cell(r.full_name)}
     ${cell(r.attending)}${cell(r.guests)}${cell(r.guest_names)}
     ${cell((r.email || "") + (r.phone ? " · " + r.phone : ""))}${cell(r.dietary)}${cell(r.message)}
+    ${extraKeys.map((k) => cell(parsed[i][k])).join("")}
   </tr>`).join("");
   const contactRows = contacts.map((c) => `<tr>${cell(c.created_at?.slice(0, 16))}${cell(c.name)}${cell(c.email)}${cell(c.message)}</tr>`).join("");
 
   const th = (labels: string[]) => `<tr class="text-start text-[11px] uppercase tracking-wide text-neutral-400">${labels.map((l) => `<th class="px-3 py-2 text-start font-medium">${l}</th>`).join("")}</tr>`;
+  const rsvpCols = ["When", "Event", "Name", "Attending", "Guests", "Guest names", "Contact", "Dietary", "Message", ...extraKeys];
 
   root.innerHTML = `
     <div class="mb-6 flex flex-wrap gap-3">
@@ -53,8 +63,8 @@ export async function initResponses(): Promise<void> {
     </div>
     <h2 class="mb-2 text-lg font-semibold">RSVPs</h2>
     <div class="mb-8 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
-      <table class="w-full text-sm"><thead>${th(["When", "Event", "Name", "Attending", "Guests", "Guest names", "Contact", "Dietary", "Message"])}</thead>
-      <tbody>${rsvpRows || `<tr><td class="p-4 text-neutral-400" colspan="9">No RSVPs yet.</td></tr>`}</tbody></table>
+      <table class="w-full text-sm"><thead>${th(rsvpCols)}</thead>
+      <tbody>${rsvpRows || `<tr><td class="p-4 text-neutral-400" colspan="${rsvpCols.length}">No RSVPs yet.</td></tr>`}</tbody></table>
     </div>
     <h2 class="mb-2 text-lg font-semibold">Messages</h2>
     <div class="overflow-x-auto rounded-xl border border-neutral-200 bg-white">

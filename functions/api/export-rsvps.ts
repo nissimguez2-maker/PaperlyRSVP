@@ -10,11 +10,11 @@ interface RsvpRow {
   id: number; site_id: string; language: string | null; full_name: string;
   email: string | null; phone: string | null; attending: string; guests: number | null;
   guest_names: string | null; dietary: string | null; message: string | null;
-  block_id: string | null; event_label: string | null; created_at: string;
+  block_id: string | null; event_label: string | null; extra: string | null; created_at: string;
 }
 
 const COLUMNS: (keyof RsvpRow)[] = [
-  "id", "site_id", "event_label", "block_id", "language", "full_name", "email", "phone",
+  "id", "site_id", "event_label", "block_id", "full_name", "email", "phone",
   "attending", "guests", "guest_names", "dietary", "message", "created_at",
 ];
 
@@ -27,9 +27,20 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
     ? env.DB.prepare("SELECT * FROM rsvps WHERE site_id = ? ORDER BY created_at DESC").bind(site)
     : env.DB.prepare("SELECT * FROM rsvps ORDER BY created_at DESC");
   const { results } = await query.all<RsvpRow>();
+  const rows = results ?? [];
 
-  const header = COLUMNS.join(",");
-  const lines = (results ?? []).map((row) => COLUMNS.map((c) => escapeCsv(row[c])).join(","));
+  // Per-invitation custom columns: union of the custom-question labels actually
+  // collected for THESE rows (so each site's CSV has exactly its own columns).
+  const parsed = rows.map((r) => {
+    try { return r.extra ? JSON.parse(r.extra) as Record<string, string> : {}; } catch { return {}; }
+  });
+  const extraKeys: string[] = [];
+  for (const obj of parsed) for (const k of Object.keys(obj)) if (!extraKeys.includes(k)) extraKeys.push(k);
+
+  const header = [...COLUMNS, ...extraKeys].map(escapeCsv).join(",");
+  const lines = rows.map((row, i) =>
+    [...COLUMNS.map((c) => escapeCsv(row[c])), ...extraKeys.map((k) => escapeCsv(parsed[i][k]))].join(","),
+  );
   const csv = "﻿" + [header, ...lines].join("\r\n");
 
   const filename = `rsvps-${site ?? "all"}-${new Date().toISOString().slice(0, 10)}.csv`;

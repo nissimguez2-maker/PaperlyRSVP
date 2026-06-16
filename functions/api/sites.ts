@@ -35,7 +35,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const title = (body.title || "").trim();
     if (!title) return json({ error: "A title is required" }, 400);
 
-    const language: Language = body.language === "he" ? "he" : "en";
+    const language: Language = body.language === "he" ? "he" : body.language === "fr" ? "fr" : "en";
     const direction: Direction = body.direction === "rtl" ? "rtl" : language === "he" ? "rtl" : "ltr";
     const eventType: EventType = (body.eventType as EventType) || "wedding";
     const layout = body.layout === "structured" ? "structured" : "pdf";

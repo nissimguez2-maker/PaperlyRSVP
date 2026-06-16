@@ -14,6 +14,7 @@
  */
 import type { SiteContent, SiteTheme, SectionKey } from "./types";
 import { renderApp, resolveLabels, themeCss, fontsHref, esc } from "./render";
+import { getDictionary } from "./i18n";
 import { SCHEMA_BY_KEY, SECTION_SCHEMAS, type Field } from "./schema";
 import { DEFAULT_DESIGN } from "./design";
 import { FONTS, cssStack, googleFontsUrl } from "./fonts";
@@ -188,18 +189,19 @@ function helpDot(text?: string): string {
 const I = {
   group: (label: string, inner: string, help?: string) =>
     `<div class="mb-4"><label class="mb-1.5 flex items-center text-xs font-medium text-neutral-500">${esc(label)}${helpDot(help)}</label>${inner}</div>`,
-  input: (path: string, value: string, type = "text") =>
-    `<input type="${type}" data-path="${path}" value="${esc(value)}" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900">`,
-  area: (path: string, value: string) =>
-    `<textarea data-path="${path}" rows="3" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900">${esc(value)}</textarea>`,
+  input: (path: string, value: string, type = "text", placeholder = "") =>
+    `<input type="${type}" data-path="${path}" value="${esc(value)}"${placeholder ? ` placeholder="${esc(placeholder)}"` : ""} class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900">`,
+  area: (path: string, value: string, placeholder = "") =>
+    `<textarea data-path="${path}" rows="3"${placeholder ? ` placeholder="${esc(placeholder)}"` : ""} class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900">${esc(value)}</textarea>`,
 };
 
 function fieldHtml(field: Field, base: string, value: any): string {
   const path = `${base}.${field.key}`;
   const help = (field as any).help as string | undefined;
+  const placeholder = (field as any).placeholder as string | undefined;
   switch (field.kind) {
-    case "text": return I.group(field.label, I.input(path, value ?? ""), help);
-    case "textarea": return I.group(field.label, I.area(path, value ?? ""), help);
+    case "text": return I.group(field.label, I.input(path, value ?? "", "text", placeholder), help);
+    case "textarea": return I.group(field.label, I.area(path, value ?? "", placeholder), help);
     case "number":
       return I.group(`${field.label} (${value ?? 0})`,
         `<div class="flex items-center gap-2"><input type="range" data-path="${path}" min="${field.min ?? 0}" max="${field.max ?? 1}" step="${field.step ?? 0.1}" value="${value ?? 0}" class="w-full">
@@ -255,9 +257,9 @@ function fieldHtml(field: Field, base: string, value: any): string {
   }
 }
 
-function selectEl(path: string, value: string, options: [string, string][]): string {
+function selectEl(path: string, value: string, options: [string, string][], rerender = false): string {
   const opts = options.map(([v, l]) => `<option value="${v}"${v === value ? " selected" : ""}>${esc(l)}</option>`).join("");
-  return `<select data-path="${path}" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">${opts}</select>`;
+  return `<select data-path="${path}"${rerender ? " data-rerender" : ""} class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">${opts}</select>`;
 }
 
 /** A dropdown that points a link at a section (no need to type the #anchor). */
@@ -382,9 +384,14 @@ function sectionsTab(): string {
   if (selected && state.content.sections[selected]) {
     const schema = SCHEMA_BY_KEY[selected];
     const data = state.content.sections[selected];
-    const body = selected === "custom"
-      ? customEditor()
-      : schema.fields.map((f) => fieldHtml(f, `content.sections.${selected}`, getByPath(data, f.key))).join("");
+    let body: string;
+    if (selected === "custom") {
+      body = customEditor();
+    } else {
+      body = schema.fields.map((f) => fieldHtml(f, `content.sections.${selected}`, getByPath(data, f.key))).join("");
+      if (selected === "rsvp") body += customFieldsEditor() + wordingEditor("rsvp");
+      if (selected === "contact") body += wordingEditor("contact");
+    }
     return `<div id="pl-controls">
       <button data-action="sec-back" class="mb-3 inline-flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-900">← All sections</button>
       <div class="mb-4 flex items-center gap-2">
@@ -431,7 +438,8 @@ function customEditor(): string {
         ${I.group("Align", alignSel(i, b.align))}`;
     } else {
       const n = (b.images ?? []).length;
-      fields = `${I.group("PDF", `<input type="file" accept="application/pdf,.pdf" data-pdf="${base}.blocks.${i}.images" class="block w-full text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white"><p class="mt-1 text-[11px] text-neutral-400">${n ? n + " page(s) loaded." : "Each page becomes a full-width image."}</p>`)}`;
+      fields = `${I.group("PDF", `<input type="file" accept="application/pdf,.pdf" data-pdf="${base}.blocks.${i}.images" class="block w-full text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white"><p class="mt-1 text-[11px] text-neutral-400">${n ? n + " page(s) loaded." : "Each page becomes a full-width image."}</p>`)}
+        ${n ? I.group("Download-button text", I.input(`${base}.blocks.${i}.downloadLabel`, b.downloadLabel ?? "", "text", "Download (PDF)")) : ""}`;
     }
     return `<div draggable="true" data-dnd="custom" data-i="${i}" class="mb-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
       <div class="mb-2 flex items-center justify-between">
@@ -451,6 +459,85 @@ function customEditor(): string {
       <button data-action="cblock-add" data-kind="image" class="flex-1 rounded-md border border-dashed border-neutral-300 py-2 text-xs hover:border-neutral-900">+ Image</button>
       <button data-action="cblock-add" data-kind="pdf" class="flex-1 rounded-md border border-dashed border-neutral-300 py-2 text-xs hover:border-neutral-900">+ PDF</button>
     </div>`;
+}
+
+/** A text input that shows the current default as a greyed-out placeholder. */
+function labelInput(path: string, value: string, placeholder: string): string {
+  return I.input(path, value ?? "", "text", placeholder);
+}
+
+/**
+ * Custom RSVP questions editor. Each question you add (e.g. "Who is driving?")
+ * becomes an input on the form AND a column in THIS invitation's responses
+ * table + CSV. Answer types: free text / number / Yes-No / choose-from-list.
+ */
+function customFieldsEditor(): string {
+  const rsvp: any = state.content.sections.rsvp ?? {};
+  const base = "content.sections.rsvp.customFields";
+  const fields: any[] = rsvp.customFields ?? [];
+  const typeSel = (i: number, v?: string) => selectEl(`${base}.${i}.type`, v ?? "text", [
+    ["text", "Free text"], ["number", "Number"], ["boolean", "Yes / No"], ["select", "Choose from a list"],
+  ], true);
+
+  const rows = fields.map((f, i) => {
+    const isSelect = (f.type ?? "text") === "select";
+    const optionsField = isSelect
+      ? I.group("Choices (one per line)",
+          `<textarea data-path="${base}.${i}.options" data-lines rows="3" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900">${esc((f.options ?? []).join("\n"))}</textarea>`,
+          "Each line becomes one option in the guest's dropdown.")
+      : "";
+    const reqToggle = `<label class="mb-1 flex cursor-pointer items-center gap-2 text-sm text-neutral-700">
+        <input type="checkbox" data-path="${base}.${i}.required"${f.required ? " checked" : ""} class="h-4 w-4 accent-neutral-900">Required</label>`;
+    return `<div draggable="true" data-dnd="cfields" data-i="${i}" class="mb-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+      <div class="mb-2 flex items-center justify-between">
+        <span data-handle class="cursor-grab select-none text-neutral-300 hover:text-neutral-600">⠿ <span class="text-xs font-semibold uppercase tracking-wide text-neutral-500">Question ${i + 1}</span></span>
+        <button data-action="cfield-del" data-i="${i}" class="rounded bg-red-50 px-2 py-1 text-xs text-red-600">✕</button>
+      </div>
+      ${I.group("Question (also the CSV column)", I.input(`${base}.${i}.label`, f.label ?? ""), "Shown to the guest and used as the column header in your export.")}
+      ${I.group("Answer type", typeSel(i, f.type))}
+      ${optionsField}
+      ${reqToggle}
+    </div>`;
+  }).join("");
+
+  return `<div class="mt-5 mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Custom questions</div>
+    <p class="mb-2 text-[11px] text-neutral-400">Your own questions. Each answer becomes a column in this invitation's responses + CSV.</p>
+    <div data-dndlist="cfields">${rows || `<p class="rounded-lg border border-dashed border-neutral-300 p-4 text-center text-xs text-neutral-400">No custom questions yet.</p>`}</div>
+    <button data-action="cfield-add" class="mt-2 w-full rounded-md border border-dashed border-neutral-300 py-2 text-xs text-neutral-600 hover:border-neutral-900">+ Add question</button>`;
+}
+
+/**
+ * Wording editor — every built-in form label is overridable, so nothing is
+ * truly hardcoded. The current language default is shown as a placeholder, so
+ * leaving a box empty keeps the default.
+ */
+function wordingEditor(which: "rsvp" | "contact"): string {
+  const d = getDictionary(state.content.language);
+  if (which === "contact") {
+    const c: any = state.content.sections.contact?.labels ?? {};
+    const base = "content.sections.contact.labels";
+    const inner = `
+      ${I.group("Name field", labelInput(`${base}.name`, c.name, d.contactName))}
+      ${I.group("Email field", labelInput(`${base}.email`, c.email, d.contactEmail))}
+      ${I.group("Message field", labelInput(`${base}.message`, c.message, d.contactMessage))}
+      ${I.group("Submit button", labelInput(`${base}.submit`, c.submit, d.contactSubmit))}`;
+    return group("Wording (field & button labels)", inner);
+  }
+  const r: any = state.content.sections.rsvp?.labels ?? {};
+  const base = "content.sections.rsvp.labels";
+  const inner = `
+    ${I.group("Name field", labelInput(`${base}.fullName`, r.fullName, d.fullName))}
+    ${I.group("Email field", labelInput(`${base}.email`, r.email, d.email))}
+    ${I.group("Phone field", labelInput(`${base}.phone`, r.phone, d.phone))}
+    ${I.group("“Attending?” question", labelInput(`${base}.attending`, r.attending, d.attending))}
+    ${I.group("“Yes” option", labelInput(`${base}.attendingYes`, r.attendingYes, d.attendingYes))}
+    ${I.group("“No” option", labelInput(`${base}.attendingNo`, r.attendingNo, d.attendingNo))}
+    ${I.group("Guests field", labelInput(`${base}.guests`, r.guests, d.guests))}
+    ${I.group("Guest names field", labelInput(`${base}.guestNames`, r.guestNames, d.guestNames))}
+    ${I.group("Dietary field", labelInput(`${base}.dietary`, r.dietary, d.dietary))}
+    ${I.group("Message field", labelInput(`${base}.message`, r.message, d.message))}
+    ${I.group("Submit button", labelInput(`${base}.submit`, r.submit, d.rsvpSubmit))}`;
+  return group("Wording (field & button labels)", inner);
 }
 
 function currentFontName(stack: string): string {
@@ -573,7 +660,7 @@ function settingsTab(): string {
   return `<div class="text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Site</div>
     ${I.group("Site name", I.input("content.meta.title", m.title))}
     ${I.group("Description", I.area("content.meta.description", m.description ?? ""))}
-    ${I.group("Language", selectEl("content.language", state.content.language, [["en", "English"], ["he", "Hebrew (עברית)"]]))}
+    ${I.group("Language", selectEl("content.language", state.content.language, [["en", "English"], ["he", "Hebrew (עברית)"], ["fr", "French (Français)"]]))}
     ${I.group("Direction", selectEl("content.direction", state.content.direction, [["ltr", "Left → Right"], ["rtl", "Right → Left (Hebrew)"]]))}
     <div class="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Navigation menu</div>${navRows}
     <button data-action="list-add" data-path="content.nav" class="w-full rounded-md border border-dashed border-neutral-300 py-2 text-xs text-neutral-600 hover:border-neutral-900">+ Add menu item</button>
@@ -638,6 +725,10 @@ function reorderGroup(group: string, from: number, to: number): void {
     const arr: any[] = state.content.sections.custom?.blocks ?? [];
     const [m] = arr.splice(from, 1);
     arr.splice(to, 0, m);
+  } else if (group === "cfields") {
+    const arr: any[] = state.content.sections.rsvp?.customFields ?? [];
+    const [m] = arr.splice(from, 1);
+    arr.splice(to, 0, m);
   }
   markDirty(); renderPanel(); renderPreviewNow();
 }
@@ -663,6 +754,19 @@ function handleAction(action: string, el: HTMLElement): void {
     const i = parseInt(el.getAttribute("data-i")!, 10);
     const sec: any = state.content.sections.custom;
     if (sec?.blocks) { sec.blocks.splice(i, 1); markDirty(); renderPanel(); renderPreviewNow(); }
+    return;
+  }
+  if (action === "cfield-add") {
+    const rsvp: any = state.content.sections.rsvp ?? ((state.content.sections as any).rsvp = emptySection("rsvp"));
+    rsvp.customFields = rsvp.customFields ?? [];
+    rsvp.customFields.push({ id: "q" + Math.random().toString(36).slice(2, 7), label: "", type: "text", required: false });
+    markDirty(); renderPanel(); renderPreviewNow();
+    return;
+  }
+  if (action === "cfield-del") {
+    const i = parseInt(el.getAttribute("data-i")!, 10);
+    const rsvp: any = state.content.sections.rsvp;
+    if (rsvp?.customFields) { rsvp.customFields.splice(i, 1); markDirty(); renderPanel(); renderPreviewNow(); }
     return;
   }
   if (action === "sec-back") {
@@ -942,6 +1046,12 @@ export async function initStudio(): Promise<void> {
     const path = t.getAttribute?.("data-path");
     if (!path) return;
     const value = (t as HTMLInputElement).value;
+    if (t.hasAttribute("data-lines")) {
+      // Multi-line textarea whose value is stored as an array (e.g. dropdown choices).
+      setByPath(state, path, value.split("\n").map((s) => s.trim()).filter(Boolean));
+      markDirty(); refreshPreview();
+      return;
+    }
     const numeric = (t as HTMLInputElement).type === "range" || (t as HTMLInputElement).type === "number";
     setByPath(state, path, numeric ? parseFloat(value) : value);
     // Keep any other inputs bound to the same path (slider ↔ number, colour ↔ hex) in sync.
@@ -973,7 +1083,11 @@ export async function initStudio(): Promise<void> {
       setByPath(state, path, value);
       // Sync any paired text input (e.g. the "custom link" box) without a full rebuild.
       panel.querySelectorAll<HTMLInputElement>(`input[data-path="${path}"]`).forEach((i) => { i.value = value; });
-      markDirty(); renderPreviewNow();
+      markDirty();
+      // Some selects change which other controls are shown (e.g. a custom
+      // question's answer type) → rebuild the panel; otherwise just the preview.
+      if (t.hasAttribute("data-rerender")) renderPanel();
+      renderPreviewNow();
     }
   });
   panel.addEventListener("click", (e) => {

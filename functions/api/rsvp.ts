@@ -30,12 +30,25 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const message = field(form, "message");
   const guestsOf = (raw: string | null) => (raw ? Math.max(0, parseInt(raw, 10) || 0) : 0);
 
+  // Custom questions → stored as JSON keyed by the question label (the CSV
+  // column header). Keys come from the per-site fields, so each invitation's
+  // export has exactly the columns it collected.
+  const cfIds = (field(form, "cf_ids") || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const extraObj: Record<string, string> = {};
+  for (const id of cfIds) {
+    const v = field(form, `cf_${id}`);
+    if (v == null) continue;
+    const label = field(form, `cflabel_${id}`) ?? id;
+    extraObj[label] = v;
+  }
+  const extra = Object.keys(extraObj).length ? JSON.stringify(extraObj) : null;
+
   const insert = (attending: string, guests: number, blockId: string | null, eventLabel: string | null) =>
     env.DB.prepare(
       `INSERT INTO rsvps
-         (site_id, language, full_name, email, phone, attending, guests, guest_names, dietary, message, block_id, event_label)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(siteId, language, fullName, email, phone, attending, guests, guestNames, dietary, message, blockId, eventLabel);
+         (site_id, language, full_name, email, phone, attending, guests, guest_names, dietary, message, block_id, event_label, extra)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(siteId, language, fullName, email, phone, attending, guests, guestNames, dietary, message, blockId, eventLabel, extra);
 
   const eventIds = (field(form, "event_ids") || "").split(",").map((s) => s.trim()).filter(Boolean);
 

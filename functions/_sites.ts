@@ -192,6 +192,7 @@ export async function ensureSchema(env: Env): Promise<void> {
         message TEXT,
         block_id TEXT,
         event_label TEXT,
+        extra TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`,
     ),
@@ -210,12 +211,16 @@ export async function ensureSchema(env: Env): Promise<void> {
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_contact_site ON contact_messages (site_id, created_at)`),
   ]);
 
-  // One-time, idempotent migration: add `cover` to databases created before it
-  // existed (CREATE TABLE IF NOT EXISTS won't add columns to an existing table).
+  // One-time, idempotent migrations for columns added after a DB was created
+  // (CREATE TABLE IF NOT EXISTS won't add columns to an existing table).
   try {
-    const cols = await env.DB.prepare("PRAGMA table_info(sites)").all<{ name: string }>();
-    if (!(cols.results ?? []).some((c) => c.name === "cover")) {
+    const siteCols = await env.DB.prepare("PRAGMA table_info(sites)").all<{ name: string }>();
+    if (!(siteCols.results ?? []).some((c) => c.name === "cover")) {
       await env.DB.prepare("ALTER TABLE sites ADD COLUMN cover TEXT").run();
+    }
+    const rsvpCols = await env.DB.prepare("PRAGMA table_info(rsvps)").all<{ name: string }>();
+    if (!(rsvpCols.results ?? []).some((c) => c.name === "extra")) {
+      await env.DB.prepare("ALTER TABLE rsvps ADD COLUMN extra TEXT").run();
     }
   } catch {
     /* best-effort; ignore */

@@ -41,9 +41,17 @@
           contactBody: "תודה שפניתם אלינו — נחזור אליכם בהקדם.",
           back: "חזרה להזמנה",
         },
+        fr: {
+          rsvpTitle: "Merci !",
+          rsvpBody: "Votre réponse a bien été reçue. Nous avons hâte de célébrer avec vous.",
+          contactTitle: "Message envoyé",
+          contactBody: "Merci de nous avoir écrit — nous vous répondrons bientôt.",
+          back: "Retour à l'invitation",
+        },
       };
       const q = new URLSearchParams(location.search);
-      const lang = q.get("lang") === "he" ? "he" : "en";
+      const reqLang = q.get("lang");
+      const lang = reqLang === "he" ? "he" : reqLang === "fr" ? "fr" : "en";
       const isContact = q.get("type") === "contact";
       const s = STR[lang];
       if (lang === "he") document.documentElement.setAttribute("dir", "rtl");
