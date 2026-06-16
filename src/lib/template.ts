@@ -16,11 +16,18 @@ export interface TemplateOptions {
   language: Language;
   direction: Direction;
   eventType: EventType;
+  /**
+   * "pdf" (default) = the primary model: an Invitation (PDF) section + free
+   * blocks + RSVP + FAQ, with the structured sections off.
+   * "structured" = the classic hero/details/schedule/location/gallery layout.
+   */
+  layout?: "pdf" | "structured";
 }
 
 export function starterContent(slug: string, o: TemplateOptions): SiteContent {
   const en = o.language === "en";
   const t = <T,>(a: T, b: T): T => (en ? a : b);
+  const pdf = o.layout !== "structured"; // PDF-first is the default
   // Role labels (bilingual). Used as neutral placeholders everywhere.
   const L = {
     eyebrow: t("Eyebrow", "כותרת קטנה"),
@@ -50,24 +57,28 @@ export function starterContent(slug: string, o: TemplateOptions): SiteContent {
       title: o.title,
       description: L.description,
     },
-    nav: [
-      { label: t("Details", "פרטים"), href: "#details" },
-      { label: t("Schedule", "לוח זמנים"), href: "#schedule" },
-      { label: t("Location", "מיקום"), href: "#location" },
-      { label: t("RSVP", "אישור הגעה"), href: "#rsvp" },
-    ],
+    nav: pdf
+      ? [{ label: t("RSVP", "אישור הגעה"), href: "#rsvp" }]
+      : [
+          { label: t("Details", "פרטים"), href: "#details" },
+          { label: t("Schedule", "לוח זמנים"), href: "#schedule" },
+          { label: t("Location", "מיקום"), href: "#location" },
+          { label: t("RSVP", "אישור הגעה"), href: "#rsvp" },
+        ],
     sections: {
-      // Off by default. Turn it on (Sections → Invitation (PDF)) to upload a
-      // Canva/Illustrator PDF as the whole design, then add RSVP/FAQ below.
-      pages: { enabled: false, title: "", body: "", images: [] },
+      // PDF-first model (default): upload the invitation PDF here as the whole
+      // design, then add free blocks + RSVP + FAQ below.
+      pages: { enabled: pdf, title: "", body: "", images: [] },
+      // Free blocks — the operator's blank canvas (text/image/PDF blocks).
+      custom: { enabled: pdf, eyebrow: "", title: "", blocks: [] },
       hero: {
-        enabled: true, eyebrow: L.eyebrow,
+        enabled: !pdf, eyebrow: L.eyebrow,
         title: o.title, subtitle: L.subtitle, date: L.date,
         location: L.location, image: "/placeholders/hero.svg",
         overlay: 0.45, cta: { label: t("RSVP", "אישור הגעה"), href: "#rsvp" },
       },
       eventDetails: {
-        enabled: true, eyebrow: L.eyebrow, title: L.title, body: L.body,
+        enabled: !pdf, eyebrow: L.eyebrow, title: L.title, body: L.body,
         image: "/placeholders/invitation.svg",
         items: [
           { label: L.label, value: L.value },
@@ -77,7 +88,7 @@ export function starterContent(slug: string, o: TemplateOptions): SiteContent {
         ],
       },
       schedule: {
-        enabled: true, eyebrow: L.eyebrow, title: t("Schedule", "לוח זמנים"), body: "",
+        enabled: !pdf, eyebrow: L.eyebrow, title: t("Schedule", "לוח זמנים"), body: "",
         items: [
           { time: L.time, title: L.title, description: L.description },
           { time: L.time, title: L.title, description: L.description },
@@ -85,12 +96,12 @@ export function starterContent(slug: string, o: TemplateOptions): SiteContent {
         ],
       },
       location: {
-        enabled: true, eyebrow: L.eyebrow, title: t("Location", "מיקום"),
+        enabled: !pdf, eyebrow: L.eyebrow, title: t("Location", "מיקום"),
         venue: L.venue, address: L.address,
         body: "", mapUrl: "https://www.google.com/maps", mapEmbedUrl: "",
       },
       gallery: {
-        enabled: true, eyebrow: L.eyebrow, title: t("Gallery", "גלריה"), body: "",
+        enabled: !pdf, eyebrow: L.eyebrow, title: t("Gallery", "גלריה"), body: "",
         images: [
           { src: "/placeholders/gallery-1.svg", alt: "" },
           { src: "/placeholders/gallery-2.svg", alt: "" },
@@ -102,7 +113,7 @@ export function starterContent(slug: string, o: TemplateOptions): SiteContent {
         body: L.body, deadlineNote: L.deadline, labels: {},
       },
       contact: {
-        enabled: true, eyebrow: L.eyebrow, title: t("Contact", "צרו קשר"),
+        enabled: !pdf, eyebrow: L.eyebrow, title: t("Contact", "צרו קשר"),
         body: L.body, labels: {},
       },
       faq: {

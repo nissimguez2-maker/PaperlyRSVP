@@ -349,12 +349,13 @@ function emptySection(key: SectionKey): any {
   const base: any = { enabled: true, title: SCHEMA_BY_KEY[key]?.title ?? key };
   if (key === "schedule" || key === "faq" || key === "eventDetails") base.items = [];
   if (key === "gallery" || key === "pages") base.images = [];
+  if (key === "custom") { base.blocks = []; base.title = ""; }
   if (key === "pages") base.title = "";
   return base;
 }
 
 const SECTION_ICON: Record<SectionKey, string> = {
-  pages: "📄", hero: "◆", eventDetails: "❖", schedule: "🕑", location: "📍",
+  pages: "📄", custom: "✚", hero: "◆", eventDetails: "❖", schedule: "🕑", location: "📍",
   gallery: "🖼", rsvp: "✓", contact: "✉", faq: "?",
 };
 
@@ -369,35 +370,75 @@ function sectionsTab(): string {
   if (selected && state.content.sections[selected]) {
     const schema = SCHEMA_BY_KEY[selected];
     const data = state.content.sections[selected];
-    const content = schema.fields.map((f) => fieldHtml(f, `content.sections.${selected}`, getByPath(data, f.key))).join("");
+    const body = selected === "custom"
+      ? customEditor()
+      : schema.fields.map((f) => fieldHtml(f, `content.sections.${selected}`, getByPath(data, f.key))).join("");
     return `<div id="pl-controls">
       <button data-action="sec-back" class="mb-3 inline-flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-900">← All sections</button>
       <div class="mb-4 flex items-center gap-2">
         <span class="grid h-8 w-8 place-items-center rounded-lg bg-neutral-900 text-sm text-white">${SECTION_ICON[selected]}</span>
         <span class="text-base font-semibold text-neutral-900">${esc(schema.title)}</span>
       </div>
-      ${content}${designHtml(selected)}
+      ${body}${designHtml(selected)}
     </div>`;
   }
 
-  // List view.
-  const list = orderedKeys().map((key) => {
+  // List view — rows are draggable to reorder.
+  const list = orderedKeys().map((key, i) => {
     const s = state.content.sections[key];
     const exists = !!s;
     const on = exists && s!.enabled !== false;
     const name = SCHEMA_BY_KEY[key]?.title ?? key;
-    return `<div class="group flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-2.5 ${on ? "" : "opacity-60"}">
-      <span class="flex flex-col text-neutral-300">
-        <button data-action="sec-up" data-key="${key}" title="Move up" class="leading-none text-[10px] hover:text-neutral-900">▲</button>
-        <button data-action="sec-down" data-key="${key}" title="Move down" class="leading-none text-[10px] hover:text-neutral-900">▼</button>
-      </span>
+    return `<div draggable="true" data-dnd="sections" data-i="${i}" class="group flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-2.5 ${on ? "" : "opacity-60"}">
+      <span data-handle title="Drag to reorder" class="cursor-grab select-none px-1 text-neutral-300 hover:text-neutral-600">⠿</span>
       <span class="grid h-8 w-8 place-items-center rounded-lg bg-neutral-100 text-sm text-neutral-600">${SECTION_ICON[key]}</span>
       <button data-action="sec-select" data-key="${key}" class="flex-1 truncate text-start text-sm font-medium text-neutral-800 ${exists ? "" : "italic text-neutral-400"}">${esc(name)}</button>
       <button data-action="sec-toggle" data-key="${key}" title="Show / hide" class="rounded-md px-2 py-1 text-[11px] ${on ? "bg-green-100 text-green-700" : "bg-neutral-100 text-neutral-400"}">${exists ? (on ? "On" : "Off") : "Add"}</button>
     </div>`;
   }).join("");
-  return `<p class="mb-3 text-xs text-neutral-400">Click a section to edit it, or click it in the preview. Drag ▲▼ to reorder.</p>
-    <div class="space-y-2">${list}</div>`;
+  return `<p class="mb-3 text-xs text-neutral-400">Click a section to edit it (or click it in the preview). Drag ⠿ to reorder.</p>
+    <div data-dndlist="sections" class="space-y-2">${list}</div>`;
+}
+
+/** Bespoke editor for the "Free blocks" section: add/drag/edit text, image & PDF blocks. */
+function customEditor(): string {
+  const data: any = state.content.sections.custom ?? { blocks: [] };
+  const base = "content.sections.custom";
+  const blocks: any[] = data.blocks ?? [];
+  const alignSel = (i: number, v?: string) => selectEl(`${base}.blocks.${i}.align`, v ?? "center", [["start", "Left"], ["center", "Center"], ["end", "Right"]]);
+
+  const rows = blocks.map((b, i) => {
+    let fields = "";
+    if (b.type === "text") {
+      fields = `${I.group("Heading (optional)", I.input(`${base}.blocks.${i}.heading`, b.heading ?? ""))}
+        ${I.group("Text", I.area(`${base}.blocks.${i}.body`, b.body ?? ""))}
+        ${I.group("Align", alignSel(i, b.align))}`;
+    } else if (b.type === "image") {
+      const thumb = b.src ? `<img src="${esc(b.src)}" alt="" class="mb-2 h-24 w-full rounded-md border border-neutral-200 object-cover">` : `<div class="mb-2 flex h-24 w-full items-center justify-center rounded-md border border-dashed border-neutral-300 text-xs text-neutral-400">No image</div>`;
+      fields = `${I.group("Image", `${thumb}<div class="flex items-center gap-2"><input type="file" accept="image/*" data-file="${base}.blocks.${i}.src" class="block flex-1 text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white"><button type="button" data-action="pick-media" data-path="${base}.blocks.${i}.src" class="shrink-0 rounded-md border border-neutral-300 px-2.5 py-1.5 text-xs hover:bg-neutral-100">Library</button></div>`)}
+        ${I.group("Align", alignSel(i, b.align))}`;
+    } else {
+      const n = (b.images ?? []).length;
+      fields = `${I.group("PDF", `<input type="file" accept="application/pdf,.pdf" data-pdf="${base}.blocks.${i}.images" class="block w-full text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white"><p class="mt-1 text-[11px] text-neutral-400">${n ? n + " page(s) loaded." : "Each page becomes a full-width image."}</p>`)}`;
+    }
+    return `<div draggable="true" data-dnd="custom" data-i="${i}" class="mb-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+      <div class="mb-2 flex items-center justify-between">
+        <span data-handle class="cursor-grab select-none text-neutral-300 hover:text-neutral-600">⠿ <span class="text-xs font-semibold uppercase tracking-wide text-neutral-500">${b.type}</span></span>
+        <button data-action="cblock-del" data-i="${i}" class="rounded bg-red-50 px-2 py-1 text-xs text-red-600">✕</button>
+      </div>
+      ${fields}
+    </div>`;
+  }).join("");
+
+  return `${I.group("Eyebrow (optional)", I.input(`${base}.eyebrow`, data.eyebrow ?? ""))}
+    ${I.group("Section title (optional)", I.input(`${base}.title`, data.title ?? ""))}
+    <div class="mb-2 mt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Blocks (drag ⠿ to reorder)</div>
+    <div data-dndlist="custom">${rows || `<p class="rounded-lg border border-dashed border-neutral-300 p-4 text-center text-xs text-neutral-400">No blocks yet — add one below.</p>`}</div>
+    <div class="mt-2 flex gap-2">
+      <button data-action="cblock-add" data-kind="text" class="flex-1 rounded-md border border-dashed border-neutral-300 py-2 text-xs hover:border-neutral-900">+ Text</button>
+      <button data-action="cblock-add" data-kind="image" class="flex-1 rounded-md border border-dashed border-neutral-300 py-2 text-xs hover:border-neutral-900">+ Image</button>
+      <button data-action="cblock-add" data-kind="pdf" class="flex-1 rounded-md border border-dashed border-neutral-300 py-2 text-xs hover:border-neutral-900">+ PDF</button>
+    </div>`;
 }
 
 function currentFontName(stack: string): string {
@@ -573,11 +614,43 @@ function markDirty(): void {
   if (s) { s.textContent = "Unsaved changes"; s.className = "text-xs text-amber-300"; }
 }
 
+/** Move an item within a drag group ("sections" → order, "custom" → blocks). */
+function reorderGroup(group: string, from: number, to: number): void {
+  if (from === to || Number.isNaN(from) || Number.isNaN(to)) return;
+  if (group === "sections") {
+    const order = orderedKeys();
+    const [m] = order.splice(from, 1);
+    order.splice(to, 0, m);
+    state.content.order = order;
+  } else if (group === "custom") {
+    const arr: any[] = state.content.sections.custom?.blocks ?? [];
+    const [m] = arr.splice(from, 1);
+    arr.splice(to, 0, m);
+  }
+  markDirty(); renderPanel(); renderPreviewNow();
+}
+
 function handleAction(action: string, el: HTMLElement): void {
   const key = el.getAttribute("data-key") as SectionKey | null;
   const path = el.getAttribute("data-path");
   if (action === "pick-media" && path) {
     void pickFromLibrary(path);
+    return;
+  }
+  if (action === "cblock-add") {
+    const kind = el.getAttribute("data-kind") as "text" | "image" | "pdf";
+    const sec: any = state.content.sections.custom ?? ((state.content.sections as any).custom = emptySection("custom"));
+    sec.blocks = sec.blocks ?? [];
+    sec.blocks.push(kind === "text" ? { type: "text", heading: "", body: "", align: "center" }
+      : kind === "image" ? { type: "image", align: "center" }
+      : { type: "pdf", images: [] });
+    markDirty(); renderPanel(); renderPreviewNow();
+    return;
+  }
+  if (action === "cblock-del") {
+    const i = parseInt(el.getAttribute("data-i")!, 10);
+    const sec: any = state.content.sections.custom;
+    if (sec?.blocks) { sec.blocks.splice(i, 1); markDirty(); renderPanel(); renderPreviewNow(); }
     return;
   }
   if (action === "sec-back") {
@@ -841,6 +914,32 @@ export async function initStudio(): Promise<void> {
     const tabId = btn.getAttribute("data-tab");
     if (tabId) { tab = tabId as typeof tab; renderPanel(); return; }
     handleAction(btn.getAttribute("data-action")!, btn);
+  });
+
+  // Drag-and-drop reordering (sections list + free blocks).
+  let dnd: { group: string; from: number } | null = null;
+  panel.addEventListener("dragstart", (e) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>("[data-dnd]");
+    if (!el) return;
+    dnd = { group: el.dataset.dnd!, from: parseInt(el.dataset.i!, 10) };
+    e.dataTransfer?.setData("text/plain", "");
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+    el.classList.add("opacity-40");
+  });
+  panel.addEventListener("dragend", (e) => {
+    (e.target as HTMLElement).closest<HTMLElement>("[data-dnd]")?.classList.remove("opacity-40");
+    dnd = null;
+  });
+  panel.addEventListener("dragover", (e) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>("[data-dnd]");
+    if (dnd && el && el.dataset.dnd === dnd.group) e.preventDefault();
+  });
+  panel.addEventListener("drop", (e) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>("[data-dnd]");
+    if (!dnd || !el || el.dataset.dnd !== dnd.group) return;
+    e.preventDefault();
+    reorderGroup(dnd.group, dnd.from, parseInt(el.dataset.i!, 10));
+    dnd = null;
   });
 
   document.getElementById("pl-save")?.addEventListener("click", save);

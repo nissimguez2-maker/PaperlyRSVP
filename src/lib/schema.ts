@@ -39,6 +39,8 @@ export const SECTION_SCHEMAS: SectionSchema[] = [
       },
     ],
   },
+  // Free blocks — editor is bespoke (see studio.ts customEditor); no schema fields.
+  { key: "custom", title: "Free blocks", fields: [] },
   {
     key: "hero",
     title: "Hero / cover",

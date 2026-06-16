@@ -108,6 +108,7 @@ interface Toggleable {
 /** The fixed set of section keys the engine knows how to render. */
 export type SectionKey =
   | "pages"
+  | "custom"
   | "hero"
   | "eventDetails"
   | "schedule"
@@ -198,6 +199,31 @@ export interface GallerySection extends Toggleable {
   body?: string;
   /** Image paths under /visuals/gallery/... with optional captions. */
   images: { src: string; alt?: string }[];
+}
+
+/**
+ * Free-form content blocks — the operator's "blank space" to add as many text /
+ * image / PDF blocks as she likes, in any order (drag to reorder). This is the
+ * primary way to build a site alongside an uploaded invitation PDF.
+ */
+export interface CustomBlock {
+  type: "text" | "image" | "pdf";
+  align?: "start" | "center" | "end";
+  /** text */
+  heading?: string;
+  body?: string;
+  /** image */
+  src?: string;
+  alt?: string;
+  /** pdf → rendered page images + the original */
+  images?: { src: string; alt?: string }[];
+  pdfUrl?: string;
+}
+
+export interface CustomSection extends Toggleable {
+  eyebrow?: string;
+  title?: string;
+  blocks: CustomBlock[];
 }
 
 /**
@@ -313,6 +339,7 @@ export interface SiteContent {
   order?: SectionKey[];
   sections: {
     pages?: PagesSection;
+    custom?: CustomSection;
     hero?: HeroSection;
     eventDetails?: EventDetailsSection;
     schedule?: ScheduleSection;

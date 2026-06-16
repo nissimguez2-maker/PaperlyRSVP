@@ -14,7 +14,7 @@
  */
 import type {
   SiteContent, SiteTheme, SectionKey, SectionDesign, NavItem,
-  PagesSection, HeroSection, EventDetailsSection, ScheduleSection, LocationSection,
+  PagesSection, CustomSection, HeroSection, EventDetailsSection, ScheduleSection, LocationSection,
   GallerySection, RsvpSection, ContactSection, FaqSection, FooterContent,
 } from "./types";
 import type { Dictionary } from "./i18n";
@@ -34,12 +34,12 @@ export interface RenderCtx {
 }
 
 export const DEFAULT_ORDER: SectionKey[] = [
-  "pages", "hero", "eventDetails", "schedule", "location", "gallery", "rsvp", "contact", "faq",
+  "pages", "hero", "eventDetails", "schedule", "location", "gallery", "custom", "rsvp", "contact", "faq",
 ];
 
 /** Anchor id for each section (used by nav links). */
 const ANCHORS: Record<SectionKey, string> = {
-  pages: "invitation", hero: "top", eventDetails: "details", schedule: "schedule",
+  pages: "invitation", custom: "more", hero: "top", eventDetails: "details", schedule: "schedule",
   location: "location", gallery: "gallery", rsvp: "rsvp", contact: "contact", faq: "faq",
 };
 
@@ -272,6 +272,36 @@ function renderPages(data: PagesSection, content: SiteContent): string {
 </section>`;
 }
 
+function renderCustom(data: CustomSection, content: SiteContent): string {
+  const p = palette("custom", data.design);
+  const alignClass = (a?: string) => a === "start" ? "text-start" : a === "end" ? "text-end" : "text-center";
+  const blocks = (data.blocks ?? []).map((b) => {
+    if (b.type === "text") {
+      return `<div class="mx-auto max-w-2xl ${alignClass(b.align)}">
+        ${b.heading ? `<h3 class="font-heading text-2xl ${p.heading}">${esc(b.heading)}</h3>` : ""}
+        ${b.body ? `<p class="mt-3 whitespace-pre-line leading-relaxed ${p.body}">${multiline(b.body)}</p>` : ""}
+      </div>`;
+    }
+    if (b.type === "image") {
+      return b.src ? `<div class="${alignClass(b.align)}"><img src="${esc(b.src)}" alt="${esc(b.alt ?? "")}" loading="lazy" class="inline-block w-full max-w-3xl rounded-xl" style="${imageStyle("custom", data.design)}"></div>` : "";
+    }
+    // pdf block: stacked page images + optional download
+    const imgs = (b.images ?? []).map((im) => `<img src="${esc(im.src)}" alt="" loading="lazy" class="mx-auto block w-full">`).join("");
+    const dl = b.pdfUrl ? `<div class="mt-4 text-center"><a href="${esc(b.pdfUrl)}" target="_blank" rel="noopener" class="btn-outline">${content.language === "he" ? "להורדה (PDF)" : "Download (PDF)"}</a></div>` : "";
+    return imgs ? `<div class="space-y-3">${imgs}${dl}</div>` : "";
+  }).filter(Boolean).join(`<div class="h-10"></div>`);
+
+  return `${open("custom", data.design)}
+  <div class="${containerClass("custom", data.design)}" style="${containerStyle("custom", data.design)}">
+    ${(data.eyebrow || data.title) ? `<div class="mb-8 text-center">
+      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+      ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("custom", data.design)}">${esc(data.title)}</h2>` : ""}
+    </div>` : ""}
+    ${blocks}
+  </div>
+</section>`;
+}
+
 function renderGallery(data: GallerySection): string {
   const p = palette("gallery", data.design);
   const rad = imageStyle("gallery", data.design);
@@ -452,6 +482,7 @@ export function renderSection(key: SectionKey, content: SiteContent, ctx: Render
   if (!s || s.enabled === false) return "";
   switch (key) {
     case "pages": return renderPages(s as PagesSection, content);
+    case "custom": return renderCustom(s as CustomSection, content);
     case "hero": return renderHero(s as HeroSection);
     case "eventDetails": return renderEventDetails(s as EventDetailsSection, content);
     case "schedule": return renderSchedule(s as ScheduleSection);

@@ -30,6 +30,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
     const body = (await request.json()) as {
       title?: string; language?: Language; direction?: Direction; eventType?: EventType;
+      layout?: "pdf" | "structured";
     };
     const title = (body.title || "").trim();
     if (!title) return json({ error: "A title is required" }, 400);
@@ -37,13 +38,14 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const language: Language = body.language === "he" ? "he" : "en";
     const direction: Direction = body.direction === "rtl" ? "rtl" : language === "he" ? "rtl" : "ltr";
     const eventType: EventType = (body.eventType as EventType) || "wedding";
+    const layout = body.layout === "structured" ? "structured" : "pdf";
 
     // Unique slug.
     let slug = slugify(title) || "site";
     let n = 1;
     while (await getSiteBySlug(env, slug)) slug = `${slugify(title)}-${++n}`;
 
-    const content = starterContent(slug, { title, language, direction, eventType });
+    const content = starterContent(slug, { title, language, direction, eventType, layout });
     await createSite(env, { slug, title, content, theme: starterTheme(), status: "building" });
     return json({ slug }, 201);
   } catch (err) {

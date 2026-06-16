@@ -123,12 +123,13 @@ async function submitNewSite(): Promise<void> {
   const language = (document.getElementById("pl-m-lang") as HTMLSelectElement).value;
   const direction = (document.getElementById("pl-m-dir") as HTMLSelectElement).value;
   const eventType = (document.getElementById("pl-m-type") as HTMLSelectElement).value;
+  const layout = (document.getElementById("pl-m-layout") as HTMLSelectElement).value;
   const err = document.getElementById("pl-m-error")!;
   if (!title) { err.textContent = "Please enter a name."; return; }
   err.textContent = "Creating…";
   const res = await fetch("/api/sites", {
     method: "POST", headers: authHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ title, language, direction, eventType }),
+    body: JSON.stringify({ title, language, direction, eventType, layout }),
   });
   if (!res.ok) { err.textContent = await errText(res); return; }
   const { slug } = (await res.json()) as { slug: string };
