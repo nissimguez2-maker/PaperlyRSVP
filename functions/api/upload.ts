@@ -29,8 +29,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   // Prefer a configured public bucket URL; otherwise serve via /img/<key>.
   const url = env.MEDIA_BASE_URL ? `${env.MEDIA_BASE_URL.replace(/\/$/, "")}/${key}` : `/img/${key}`;
 
-  // Record it in the reusable media library (best-effort).
-  if (hasDb(env)) {
+  // Record it in the reusable media library (images only, so PDFs etc. don't
+  // show up as broken thumbnails). Best-effort.
+  if (hasDb(env) && (file.type || "").startsWith("image/")) {
     try {
       await ensureSchema(env);
       await insertMedia(env, { key, url, name: file.name, content_type: file.type, size: file.size, slug });

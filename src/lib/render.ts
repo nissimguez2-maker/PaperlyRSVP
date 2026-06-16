@@ -14,7 +14,7 @@
  */
 import type {
   SiteContent, SiteTheme, SectionKey, SectionDesign, NavItem,
-  HeroSection, EventDetailsSection, ScheduleSection, LocationSection,
+  PagesSection, HeroSection, EventDetailsSection, ScheduleSection, LocationSection,
   GallerySection, RsvpSection, ContactSection, FaqSection, FooterContent,
 } from "./types";
 import type { Dictionary } from "./i18n";
@@ -34,13 +34,13 @@ export interface RenderCtx {
 }
 
 export const DEFAULT_ORDER: SectionKey[] = [
-  "hero", "eventDetails", "schedule", "location", "gallery", "rsvp", "contact", "faq",
+  "pages", "hero", "eventDetails", "schedule", "location", "gallery", "rsvp", "contact", "faq",
 ];
 
 /** Anchor id for each section (used by nav links). */
 const ANCHORS: Record<SectionKey, string> = {
-  hero: "top", eventDetails: "details", schedule: "schedule", location: "location",
-  gallery: "gallery", rsvp: "rsvp", contact: "contact", faq: "faq",
+  pages: "invitation", hero: "top", eventDetails: "details", schedule: "schedule",
+  location: "location", gallery: "gallery", rsvp: "rsvp", contact: "contact", faq: "faq",
 };
 
 // --- small helpers ---------------------------------------------------------
@@ -248,6 +248,30 @@ function renderLocation(data: LocationSection, labels: Dictionary): string {
 </section>`;
 }
 
+function renderPages(data: PagesSection, content: SiteContent): string {
+  const p = palette("pages", data.design);
+  const rad = imageStyle("pages", data.design);
+  const imgs = (data.images ?? [])
+    .map((im, i) => `<img src="${esc(im.src)}" alt="${esc(im.alt ?? `Invitation page ${i + 1}`)}" loading="${i === 0 ? "eager" : "lazy"}" class="mx-auto block w-full" style="${rad}">`)
+    .join("");
+  const dl = data.pdfUrl
+    ? `<div class="mt-8 text-center"><a href="${esc(data.pdfUrl)}" target="_blank" rel="noopener" class="btn-outline">${content.language === "he" ? "להורדת ההזמנה (PDF)" : "Download invitation (PDF)"}</a></div>`
+    : "";
+  const header = (data.eyebrow || data.title || data.body) ? `
+    <div class="mb-8 text-center">
+      ${data.eyebrow ? `<p class="mb-3 text-xs uppercase tracking-[0.25em] ${p.eyebrow}">${esc(data.eyebrow)}</p>` : ""}
+      ${data.title ? `<h2 class="font-heading ${p.heading}" style="${titleStyle("pages", data.design)}">${esc(data.title)}</h2>` : ""}
+      ${data.body ? `<p class="mx-auto mt-4 max-w-2xl ${p.body}">${esc(data.body)}</p>` : ""}
+    </div>` : "";
+  return `${open("pages", data.design)}
+  <div class="${containerClass("pages", data.design)}" style="${containerStyle("pages", data.design)}">
+    ${header}
+    <div class="space-y-4">${imgs || `<p class="py-16 text-center ${p.body}">Upload your invitation PDF in the editor.</p>`}</div>
+    ${dl}
+  </div>
+</section>`;
+}
+
 function renderGallery(data: GallerySection): string {
   const p = palette("gallery", data.design);
   const rad = imageStyle("gallery", data.design);
@@ -427,6 +451,7 @@ export function renderSection(key: SectionKey, content: SiteContent, ctx: Render
   const s = content.sections[key];
   if (!s || s.enabled === false) return "";
   switch (key) {
+    case "pages": return renderPages(s as PagesSection, content);
     case "hero": return renderHero(s as HeroSection);
     case "eventDetails": return renderEventDetails(s as EventDetailsSection, content);
     case "schedule": return renderSchedule(s as ScheduleSection);

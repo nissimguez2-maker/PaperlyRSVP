@@ -14,6 +14,7 @@ export type Field =
   | { kind: "image"; key: string; label: string }
   | { kind: "number"; key: string; label: string; min?: number; max?: number; step?: number }
   | { kind: "datetime"; key: string; label: string }
+  | { kind: "pdf"; key: string; label: string }
   | { kind: "link"; key: string; label: string }
   | { kind: "list"; key: string; label: string; itemLabel: string; item: Field[] };
 
@@ -25,6 +26,19 @@ export interface SectionSchema {
 }
 
 export const SECTION_SCHEMAS: SectionSchema[] = [
+  {
+    key: "pages",
+    title: "Invitation (PDF)",
+    fields: [
+      { kind: "pdf", key: "images", label: "Upload your invitation PDF" },
+      { kind: "text", key: "title", label: "Heading above (optional)" },
+      { kind: "textarea", key: "body", label: "Text above (optional)" },
+      {
+        kind: "list", key: "images", label: "Pages", itemLabel: "Page",
+        item: [{ kind: "image", key: "src", label: "Image" }],
+      },
+    ],
+  },
   {
     key: "hero",
     title: "Hero / cover",

@@ -200,6 +200,12 @@ function fieldHtml(field: Field, base: string, value: any): string {
     case "datetime":
       return I.group(field.label,
         `<input type="datetime-local" data-path="${path}" value="${esc(value ?? "")}" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">`);
+    case "pdf": {
+      const count = Array.isArray(value) ? value.length : 0;
+      return I.group(field.label,
+        `<input type="file" accept="application/pdf,.pdf" data-pdf="${path}" class="block w-full text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white">
+        <p class="mt-1 text-[11px] text-neutral-400">Each page becomes a full-width image. ${count ? count + " page(s) loaded — manage them under Pages below." : "The original PDF is kept for a download button."}</p>`);
+    }
     case "image": {
       const thumb = value
         ? `<img src="${esc(value)}" alt="" class="mb-2 h-24 w-full rounded-md object-cover border border-neutral-200">`
@@ -342,12 +348,13 @@ function orderedKeys(): SectionKey[] {
 function emptySection(key: SectionKey): any {
   const base: any = { enabled: true, title: SCHEMA_BY_KEY[key]?.title ?? key };
   if (key === "schedule" || key === "faq" || key === "eventDetails") base.items = [];
-  if (key === "gallery") base.images = [];
+  if (key === "gallery" || key === "pages") base.images = [];
+  if (key === "pages") base.title = "";
   return base;
 }
 
 const SECTION_ICON: Record<SectionKey, string> = {
-  hero: "◆", eventDetails: "❖", schedule: "🕑", location: "📍",
+  pages: "📄", hero: "◆", eventDetails: "❖", schedule: "🕑", location: "📍",
   gallery: "🖼", rsvp: "✓", contact: "✉", faq: "?",
 };
 
@@ -635,6 +642,62 @@ async function uploadImage(file: File, path: string): Promise<void> {
   markDirty(); renderPanel(); renderPreviewNow();
 }
 
+/** Upload one image blob to R2 and return its URL. */
+async function uploadBlob(blob: Blob, name: string): Promise<string | null> {
+  const form = new FormData();
+  form.append("file", blob, name);
+  form.append("slug", state.slug);
+  const res = await fetch("/api/upload", { method: "POST", headers: authHeaders(), body: form });
+  if (!res.ok) return null;
+  return (await res.json() as { url: string }).url;
+}
+
+/**
+ * Convert an uploaded PDF (e.g. a Canva/Illustrator invitation) into full-width
+ * page images and store them on the "pages" section. Keeps the original PDF for
+ * a download button. Uses pdf.js loaded from a CDN on demand.
+ */
+async function handlePdfUpload(file: File, path: string): Promise<void> {
+  setStatus("Reading PDF…");
+  try {
+    const CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136";
+    const pdfjs: any = await import(/* @vite-ignore */ `${CDN}/pdf.min.mjs`);
+    pdfjs.GlobalWorkerOptions.workerSrc = `${CDN}/pdf.worker.min.mjs`;
+    const data = await file.arrayBuffer();
+    const pdf = await pdfjs.getDocument({ data }).promise;
+    const total = Math.min(pdf.numPages, 40); // safety cap
+    const urls: { src: string }[] = [];
+    for (let i = 1; i <= total; i++) {
+      setStatus(`Rendering page ${i}/${total}…`);
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 2 }); // crisp
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext("2d")!;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/webp", 0.92));
+      if (!blob) continue;
+      setStatus(`Uploading page ${i}/${total}…`);
+      const url = await uploadBlob(blob, `invitation-${i}.webp`);
+      if (url) urls.push({ src: url });
+    }
+    // Keep the original PDF too (for the download button).
+    setStatus("Saving original PDF…");
+    const pdfUrl = await uploadBlob(file, file.name || "invitation.pdf");
+
+    setByPath(state, path, urls);
+    const secPath = path.replace(/\.images$/, "");
+    if (pdfUrl) setByPath(state, `${secPath}.pdfUrl`, pdfUrl);
+    markDirty();
+    renderPanel();
+    renderPreviewNow();
+    setStatus(`Loaded ${urls.length} page(s) ✓`);
+  } catch (err) {
+    setStatus("Couldn't read that PDF: " + (err instanceof Error ? err.message : String(err)), true);
+  }
+}
+
 /** Open the media library in a modal and set the chosen image at `path`. */
 async function pickFromLibrary(path: string): Promise<void> {
   const overlay = document.createElement("div");
@@ -747,6 +810,12 @@ export async function initStudio(): Promise<void> {
     if (filePath) {
       const file = (t as HTMLInputElement).files?.[0];
       if (file) await uploadImage(file, filePath);
+      return;
+    }
+    const pdfPath = t.getAttribute?.("data-pdf");
+    if (pdfPath) {
+      const file = (t as HTMLInputElement).files?.[0];
+      if (file) await handlePdfUpload(file, pdfPath);
       return;
     }
     if (t.tagName === "SELECT" && t.getAttribute("data-path")) {

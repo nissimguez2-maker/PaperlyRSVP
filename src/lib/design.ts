@@ -13,6 +13,7 @@ import type { SectionDesign, SectionKey } from "./types";
 
 /** Sensible per-section defaults so a section looks right with no overrides. */
 export const DEFAULT_DESIGN: Record<SectionKey, Required<Pick<SectionDesign, "spaceTop" | "spaceBottom" | "align" | "width" | "titleScale" | "bg">>> = {
+  pages: { spaceTop: 0, spaceBottom: 0, align: "center", width: "wide", titleScale: 1, bg: "bg" },
   hero: { spaceTop: 0, spaceBottom: 0, align: "center", width: "normal", titleScale: 1, bg: "bg" },
   eventDetails: { spaceTop: 6, spaceBottom: 6, align: "start", width: "normal", titleScale: 1, bg: "bg" },
   schedule: { spaceTop: 6, spaceBottom: 6, align: "center", width: "normal", titleScale: 1, bg: "surface" },

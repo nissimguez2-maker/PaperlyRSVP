@@ -57,6 +57,9 @@ export function starterContent(slug: string, o: TemplateOptions): SiteContent {
       { label: t("RSVP", "אישור הגעה"), href: "#rsvp" },
     ],
     sections: {
+      // Off by default. Turn it on (Sections → Invitation (PDF)) to upload a
+      // Canva/Illustrator PDF as the whole design, then add RSVP/FAQ below.
+      pages: { enabled: false, title: "", body: "", images: [] },
       hero: {
         enabled: true, eyebrow: L.eyebrow,
         title: o.title, subtitle: L.subtitle, date: L.date,

@@ -107,6 +107,7 @@ interface Toggleable {
 
 /** The fixed set of section keys the engine knows how to render. */
 export type SectionKey =
+  | "pages"
   | "hero"
   | "eventDetails"
   | "schedule"
@@ -197,6 +198,21 @@ export interface GallerySection extends Toggleable {
   body?: string;
   /** Image paths under /visuals/gallery/... with optional captions. */
   images: { src: string; alt?: string }[];
+}
+
+/**
+ * Invitation pages — the design your wife exports from Canva/Illustrator as a
+ * PDF. The PDF's pages are converted to full-width images (in the Studio) and
+ * shown stacked as the visual centerpiece. `pdfUrl` keeps the original for an
+ * optional download button.
+ */
+export interface PagesSection extends Toggleable {
+  eyebrow?: string;
+  title?: string;
+  body?: string;
+  images: { src: string; alt?: string }[];
+  /** Original uploaded PDF (for the "Download invitation" button). */
+  pdfUrl?: string;
 }
 
 /** Labels for the RSVP form. Any omitted label falls back to the i18n default
@@ -296,6 +312,7 @@ export interface SiteContent {
    */
   order?: SectionKey[];
   sections: {
+    pages?: PagesSection;
     hero?: HeroSection;
     eventDetails?: EventDetailsSection;
     schedule?: ScheduleSection;
