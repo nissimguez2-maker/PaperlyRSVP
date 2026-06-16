@@ -1,8 +1,10 @@
 ---
 /**
  * Media library page — a reusable bank of all uploaded images, shared across
- * every site. Data loads client-side from /api/media (admin-protected).
+ * every site. Rendered as a HeroUI React island (client:only="react") that
+ * loads from /api/media (admin-protected).
  */
+import Media from "../../components/Media.tsx";
 ---
 
 <!doctype html>
@@ -12,6 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
     <title>Paperly · Media library</title>
+    <link rel="stylesheet" href="/heroui.css" />
     <link rel="stylesheet" href="/site.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,36 +25,10 @@
     <link rel="icon" href="/favicon.svg" />
   </head>
   <body class="min-h-screen bg-pl-canvas font-pl-ui text-pl-ink">
-    <header class="pl-topbar sticky top-0 z-40 gap-4 px-4 py-3 sm:px-6">
-      <a href="/admin" class="flex items-center gap-2 text-pl-paper">
-        <span class="pl-wordmark">Paperly</span>
-        <span class="text-pl-gold-2" aria-hidden="true">·</span>
-      </a>
-      <span class="hidden rounded-full bg-pl-paper/10 px-2.5 py-0.5 text-[11px] tracking-wide text-pl-paper/70 sm:inline"
-        >Media library</span
-      >
-      <nav class="ms-2 hidden items-center gap-5 text-sm text-pl-paper/65 sm:flex">
-        <a href="/admin" class="transition-colors hover:text-pl-paper">Sites</a>
-        <a href="/admin/media" class="text-pl-paper">Media library</a>
-      </nav>
-      <label class="pl-btn-gold ms-auto cursor-pointer">
-        <span aria-hidden="true">+</span> Upload
-        <input id="pl-upload" type="file" accept="image/*" multiple class="hidden" />
-      </label>
-    </header>
-
-    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-10">
-      <h1 class="font-pl-display text-2xl font-medium tracking-[-0.01em] text-pl-ink">Media library</h1>
-      <p class="mb-4 mt-1 max-w-2xl text-sm text-pl-muted">
-        Everything you upload (here or from a site's editor) lives here so you can reuse it across clients.
-      </p>
-      <p id="pl-upload-status" class="mb-4 min-h-5 text-sm text-pl-gold"></p>
-      <div id="pl-media"><p class="text-pl-muted">Loading…</p></div>
-    </main>
-
-    <script>
-      import { initMedia } from "../../lib/media";
-      initMedia();
-    </script>
+    <Media client:only="react">
+      <main slot="fallback" class="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-10">
+        <p class="text-pl-muted">Loading…</p>
+      </main>
+    </Media>
   </body>
 </html>

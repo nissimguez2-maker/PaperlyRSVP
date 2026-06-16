@@ -1,8 +1,10 @@
 ---
 /**
  * Per-site responses view — RSVPs + contact messages for ?slug=<slug>.
- * Data loads client-side from /api/responses (admin-protected).
+ * Rendered as a HeroUI React island (client:only="react") that loads from
+ * /api/responses (admin-protected).
  */
+import Responses from "../../components/Responses.tsx";
 ---
 
 <!doctype html>
@@ -12,6 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
     <title>Paperly · Responses</title>
+    <link rel="stylesheet" href="/heroui.css" />
     <link rel="stylesheet" href="/site.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,22 +25,10 @@
     <link rel="icon" href="/favicon.svg" />
   </head>
   <body class="min-h-screen bg-pl-canvas font-pl-ui text-pl-ink">
-    <header class="pl-topbar sticky top-0 z-40 gap-3 px-4 py-3 sm:px-6">
-      <a href="/admin" class="pl-btn-ghost px-2.5 py-1.5 text-xs text-pl-paper/80 hover:bg-pl-paper/10 hover:text-pl-paper"
-        ><span aria-hidden="true">←</span> Sites</a
-      >
-      <span class="pl-wordmark text-pl-paper">Responses</span>
-      <span id="pl-title" class="rounded-full bg-pl-paper/10 px-2.5 py-0.5 text-[11px] tracking-wide text-pl-paper/75"></span>
-      <a id="pl-csv" href="#" class="pl-btn-gold ms-auto">Download CSV</a>
-    </header>
-
-    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-10">
-      <div id="pl-responses"><p class="text-pl-muted">Loading…</p></div>
-    </main>
-
-    <script>
-      import { initResponses } from "../../lib/responses";
-      initResponses();
-    </script>
+    <Responses client:only="react">
+      <main slot="fallback" class="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-10">
+        <p class="text-pl-muted">Loading…</p>
+      </main>
+    </Responses>
   </body>
 </html>
