@@ -188,11 +188,11 @@ function helpDot(text?: string): string {
 
 const I = {
   group: (label: string, inner: string, help?: string) =>
-    `<div class="mb-4"><label class="pl-label flex items-center">${esc(label)}${helpDot(help)}</label>${inner}</div>`,
+    `<div class="mb-4"><label class="label mb-1 flex items-center">${esc(label)}${helpDot(help)}</label>${inner}</div>`,
   input: (path: string, value: string, type = "text", placeholder = "") =>
-    `<input type="${type}" data-path="${path}" value="${esc(value)}"${placeholder ? ` placeholder="${esc(placeholder)}"` : ""} class="pl-input">`,
+    `<input type="${type}" data-path="${path}" value="${esc(value)}"${placeholder ? ` placeholder="${esc(placeholder)}"` : ""} class="input w-full">`,
   area: (path: string, value: string, placeholder = "") =>
-    `<textarea data-path="${path}" rows="3"${placeholder ? ` placeholder="${esc(placeholder)}"` : ""} class="pl-input leading-relaxed">${esc(value)}</textarea>`,
+    `<textarea data-path="${path}" rows="3"${placeholder ? ` placeholder="${esc(placeholder)}"` : ""} class="textarea w-full leading-relaxed">${esc(value)}</textarea>`,
 };
 
 function fieldHtml(field: Field, base: string, value: any): string {
@@ -213,7 +213,7 @@ function fieldHtml(field: Field, base: string, value: any): string {
     }
     case "datetime":
       return I.group(field.label,
-        `<input type="datetime-local" data-path="${path}" value="${esc(value ?? "")}" class="pl-input">`, help);
+        `<input type="datetime-local" data-path="${path}" value="${esc(value ?? "")}" class="input w-full">`, help);
     case "pdf": {
       const count = Array.isArray(value) ? value.length : 0;
       return I.group(field.label,
@@ -228,13 +228,13 @@ function fieldHtml(field: Field, base: string, value: any): string {
         `${thumb}
         <div class="flex items-center gap-2">
           <input type="file" accept="image/*" data-file="${path}" class="block flex-1 text-xs text-pl-ink-2 file:mr-2 file:rounded-md file:border-0 file:bg-pl-ink file:px-3 file:py-1.5 file:text-pl-paper file:cursor-pointer hover:file:bg-pl-forest">
-          <button type="button" data-action="pick-media" data-path="${path}" class="pl-btn-ghost shrink-0 px-2.5 py-1.5 text-xs ring-1 ring-pl-line">Library</button>
+          <button type="button" data-action="pick-media" data-path="${path}" class="button button--ghost button--sm shrink-0">Library</button>
         </div>
         <p class="mt-1.5 text-[11px] leading-relaxed text-pl-muted">Uploaded full-resolution (HD), saved to your media library.</p>`, help);
     }
     case "link": {
       const v = value ?? {};
-      return `<div class="mb-4 rounded-xl border border-pl-line bg-pl-wash/30 p-3"><p class="pl-label">${esc(field.label)}</p>
+      return `<div class="mb-4 rounded-xl border border-pl-line bg-pl-wash/30 p-3"><p class="label mb-1 block">${esc(field.label)}</p>
         ${I.group("Button text", I.input(`${path}.label`, v.label ?? ""))}
         ${I.group("Goes to", linkTargetSelect(`${path}.href`, v.href ?? ""))}
         ${I.group("…or a custom link", I.input(`${path}.href`, v.href ?? ""))}</div>`;
@@ -245,21 +245,21 @@ function fieldHtml(field: Field, base: string, value: any): string {
         <div class="mb-3 rounded-xl border border-pl-line bg-pl-paper p-3">
           <div class="mb-2 flex items-center justify-between"><span class="text-[11px] font-semibold uppercase tracking-wide text-pl-muted">${esc(field.itemLabel)} ${i + 1}</span>
             <span class="flex gap-1">
-              <button data-action="list-up" data-path="${path}.${i}" title="Move up" class="rounded-md bg-pl-wash px-2 py-1 text-xs text-pl-ink-2 hover:bg-pl-gold/20">↑</button>
-              <button data-action="list-down" data-path="${path}.${i}" title="Move down" class="rounded-md bg-pl-wash px-2 py-1 text-xs text-pl-ink-2 hover:bg-pl-gold/20">↓</button>
-              <button data-action="list-del" data-path="${path}.${i}" title="Remove" class="rounded-md bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100">✕</button>
+              <button data-action="list-up" data-path="${path}.${i}" title="Move up" class="button button--ghost button--icon-only button--sm">↑</button>
+              <button data-action="list-down" data-path="${path}.${i}" title="Move down" class="button button--ghost button--icon-only button--sm">↓</button>
+              <button data-action="list-del" data-path="${path}.${i}" title="Remove" class="button button--danger-soft button--icon-only button--sm">✕</button>
             </span></div>
           ${field.item.map((f) => fieldHtml(f, `${path}.${i}`, item?.[f.key])).join("")}
         </div>`).join("");
-      return `<div class="mb-4"><label class="pl-label flex items-center">${esc(field.label)}${helpDot(help)}</label>${rows}
-        <button data-action="list-add" data-path="${path}" class="w-full rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ Add ${esc(field.itemLabel)}</button></div>`;
+      return `<div class="mb-4"><label class="label mb-1 flex items-center">${esc(field.label)}${helpDot(help)}</label>${rows}
+        <button data-action="list-add" data-path="${path}" class="button button--ghost button--sm button--full-width">+ Add ${esc(field.itemLabel)}</button></div>`;
     }
   }
 }
 
 function selectEl(path: string, value: string, options: [string, string][], rerender = false): string {
   const opts = options.map(([v, l]) => `<option value="${v}"${v === value ? " selected" : ""}>${esc(l)}</option>`).join("");
-  return `<select data-path="${path}"${rerender ? " data-rerender" : ""} class="pl-select">${opts}</select>`;
+  return `<select data-path="${path}"${rerender ? " data-rerender" : ""} class="input w-full">${opts}</select>`;
 }
 
 /** A dropdown that points a link at a section (no need to type the #anchor). */
@@ -426,7 +426,7 @@ function sectionsTab(): string {
       <span data-handle title="Drag to reorder" class="cursor-grab select-none px-1 text-pl-muted/60 hover:text-pl-ink-2">⠿</span>
       <span class="grid h-8 w-8 place-items-center rounded-lg bg-pl-wash text-pl-gold">${SECTION_ICON[key]}</span>
       <button data-action="sec-select" data-key="${key}" class="flex-1 truncate text-start text-sm font-medium text-pl-ink ${exists ? "" : "italic text-pl-muted"}">${esc(name)}</button>
-      <button data-action="sec-toggle" data-key="${key}" title="Show / hide" class="pl-chip ${on ? "bg-pl-sage/15 text-pl-sage" : "bg-pl-wash text-pl-muted"}">${exists ? (on ? "On" : "Off") : "Add"}</button>
+      <button data-action="sec-toggle" data-key="${key}" title="Show / hide" class="chip chip--sm chip--soft ${exists ? (on ? "chip--success" : "chip--default") : "chip--accent"}">${exists ? (on ? "On" : "Off") : "Add"}</button>
     </div>`;
   }).join("");
   return `<p class="mb-3 text-xs leading-relaxed text-pl-muted">Click a section to edit it (or click it in the preview). Drag ⠿ to reorder.</p>
@@ -448,7 +448,7 @@ function customEditor(): string {
         ${I.group("Align", alignSel(i, b.align))}`;
     } else if (b.type === "image") {
       const thumb = b.src ? `<img src="${esc(b.src)}" alt="" class="mb-2 h-24 w-full rounded-lg border border-pl-line object-cover">` : `<div class="mb-2 flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-pl-line bg-pl-wash/40 text-xs text-pl-muted">No image</div>`;
-      fields = `${I.group("Image", `${thumb}<div class="flex items-center gap-2"><input type="file" accept="image/*" data-file="${base}.blocks.${i}.src" class="block flex-1 text-xs text-pl-ink-2 file:mr-2 file:rounded-md file:border-0 file:bg-pl-ink file:px-3 file:py-1.5 file:text-pl-paper file:cursor-pointer hover:file:bg-pl-forest"><button type="button" data-action="pick-media" data-path="${base}.blocks.${i}.src" class="pl-btn-ghost shrink-0 px-2.5 py-1.5 text-xs ring-1 ring-pl-line">Library</button></div>`)}
+      fields = `${I.group("Image", `${thumb}<div class="flex items-center gap-2"><input type="file" accept="image/*" data-file="${base}.blocks.${i}.src" class="block flex-1 text-xs text-pl-ink-2 file:mr-2 file:rounded-md file:border-0 file:bg-pl-ink file:px-3 file:py-1.5 file:text-pl-paper file:cursor-pointer hover:file:bg-pl-forest"><button type="button" data-action="pick-media" data-path="${base}.blocks.${i}.src" class="button button--ghost button--sm shrink-0">Library</button></div>`)}
         ${I.group("Align", alignSel(i, b.align))}`;
     } else {
       const n = (b.images ?? []).length;
@@ -458,7 +458,7 @@ function customEditor(): string {
     return `<div draggable="true" data-dnd="custom" data-i="${i}" class="mb-3 rounded-xl border border-pl-line bg-pl-wash/30 p-3">
       <div class="mb-2 flex items-center justify-between">
         <span data-handle class="inline-flex cursor-grab select-none items-center gap-1.5 text-pl-muted/60 hover:text-pl-ink-2">⠿ <span class="text-[11px] font-semibold uppercase tracking-wide text-pl-muted">${b.type}</span></span>
-        <button data-action="cblock-del" data-i="${i}" title="Remove block" class="rounded-md bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100">✕</button>
+        <button data-action="cblock-del" data-i="${i}" title="Remove block" class="button button--danger-soft button--icon-only button--sm">✕</button>
       </div>
       ${fields}
     </div>`;
@@ -469,9 +469,9 @@ function customEditor(): string {
     <div class="mb-2 mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-pl-muted">Blocks (drag ⠿ to reorder)</div>
     <div data-dndlist="custom">${rows || `<p class="rounded-xl border border-dashed border-pl-line bg-pl-wash/30 p-4 text-center text-xs text-pl-muted">No blocks yet — add one below.</p>`}</div>
     <div class="mt-2 flex gap-2">
-      <button data-action="cblock-add" data-kind="text" class="flex-1 rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ Text</button>
-      <button data-action="cblock-add" data-kind="image" class="flex-1 rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ Image</button>
-      <button data-action="cblock-add" data-kind="pdf" class="flex-1 rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ PDF</button>
+      <button data-action="cblock-add" data-kind="text" class="button button--ghost button--sm flex-1">+ Text</button>
+      <button data-action="cblock-add" data-kind="image" class="button button--ghost button--sm flex-1">+ Image</button>
+      <button data-action="cblock-add" data-kind="pdf" class="button button--ghost button--sm flex-1">+ PDF</button>
     </div>`;
 }
 
@@ -497,7 +497,7 @@ function customFieldsEditor(): string {
     const isSelect = (f.type ?? "text") === "select";
     const optionsField = isSelect
       ? I.group("Choices (one per line)",
-          `<textarea data-path="${base}.${i}.options" data-lines rows="3" class="pl-input leading-relaxed">${esc((f.options ?? []).join("\n"))}</textarea>`,
+          `<textarea data-path="${base}.${i}.options" data-lines rows="3" class="textarea w-full leading-relaxed">${esc((f.options ?? []).join("\n"))}</textarea>`,
           "Each line becomes one option in the guest's dropdown.")
       : "";
     const reqToggle = `<label class="mb-1 flex cursor-pointer items-center gap-2 text-sm text-pl-ink-2">
@@ -505,7 +505,7 @@ function customFieldsEditor(): string {
     return `<div draggable="true" data-dnd="cfields" data-i="${i}" class="mb-3 rounded-xl border border-pl-line bg-pl-wash/30 p-3">
       <div class="mb-2 flex items-center justify-between">
         <span data-handle class="inline-flex cursor-grab select-none items-center gap-1.5 text-pl-muted/60 hover:text-pl-ink-2">⠿ <span class="text-[11px] font-semibold uppercase tracking-wide text-pl-muted">Question ${i + 1}</span></span>
-        <button data-action="cfield-del" data-i="${i}" title="Remove question" class="rounded-md bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100">✕</button>
+        <button data-action="cfield-del" data-i="${i}" title="Remove question" class="button button--danger-soft button--icon-only button--sm">✕</button>
       </div>
       ${I.group("Question (also the CSV column)", I.input(`${base}.${i}.label`, f.label ?? ""), "Shown to the guest and used as the column header in your export.")}
       ${I.group("Answer type", typeSel(i, f.type))}
@@ -517,7 +517,7 @@ function customFieldsEditor(): string {
   return `<div class="mt-6 mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-pl-muted">Custom questions</div>
     <p class="mb-2.5 text-[11px] leading-relaxed text-pl-muted">Your own questions. Each answer becomes a column in this invitation's responses + CSV.</p>
     <div data-dndlist="cfields">${rows || `<p class="rounded-xl border border-dashed border-pl-line bg-pl-wash/30 p-4 text-center text-xs text-pl-muted">No custom questions yet.</p>`}</div>
-    <button data-action="cfield-add" class="mt-2 w-full rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ Add question</button>`;
+    <button data-action="cfield-add" class="button button--ghost button--sm button--full-width mt-2">+ Add question</button>`;
 }
 
 /**
@@ -585,10 +585,10 @@ function fontPickerButton(target: string, stack: string): string {
 function openFontPicker(currentName: string, onPick: (name: string) => void): void {
   const overlay = document.createElement("div");
   overlay.className = "fixed inset-0 z-[70] flex items-center justify-center bg-pl-ink/55 p-4 backdrop-blur-sm";
-  overlay.innerHTML = `<div class="pl-card flex max-h-[80vh] w-full max-w-md flex-col p-4">
+  overlay.innerHTML = `<div class="card flex max-h-[80vh] w-full max-w-md flex-col p-4">
     <div class="mb-3 flex items-center justify-between"><h3 class="font-pl-display text-lg font-semibold text-pl-ink">Choose a font</h3>
-      <button data-close class="pl-btn-ghost px-2.5 py-1 text-sm">Close</button></div>
-    <input data-search type="text" placeholder="Search ${FONTS.length}+ fonts…" class="pl-input mb-3">
+      <button data-close class="button button--ghost button--sm">Close</button></div>
+    <input data-search type="text" placeholder="Search ${FONTS.length}+ fonts…" class="input mb-3 w-full">
     <div data-list class="-mx-1 flex-1 overflow-y-auto"></div>
   </div>`;
   document.body.appendChild(overlay);
@@ -902,9 +902,9 @@ async function handlePdfUpload(file: File, path: string): Promise<void> {
 async function pickFromLibrary(path: string): Promise<void> {
   const overlay = document.createElement("div");
   overlay.className = "fixed inset-0 z-[60] flex items-center justify-center bg-pl-ink/55 p-4 backdrop-blur-sm";
-  overlay.innerHTML = `<div class="pl-card flex max-h-[80vh] w-full max-w-3xl flex-col p-5">
+  overlay.innerHTML = `<div class="card flex max-h-[80vh] w-full max-w-3xl flex-col p-5">
     <div class="mb-3 flex items-center justify-between"><h3 class="font-pl-display text-lg font-semibold text-pl-ink">Media library</h3>
-      <button data-close class="pl-btn-ghost px-2.5 py-1 text-sm">Close</button></div>
+      <button data-close class="button button--ghost button--sm">Close</button></div>
     <div data-grid class="grid grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4"><p class="text-sm text-pl-muted">Loading…</p></div>
   </div>`;
   document.body.appendChild(overlay);
@@ -931,12 +931,12 @@ async function pickFromLibrary(path: string): Promise<void> {
 async function openMediaManager(): Promise<void> {
   const overlay = document.createElement("div");
   overlay.className = "fixed inset-0 z-[60] flex items-center justify-center bg-pl-ink/55 p-4 backdrop-blur-sm";
-  overlay.innerHTML = `<div class="pl-card flex max-h-[82vh] w-full max-w-3xl flex-col p-5">
+  overlay.innerHTML = `<div class="card flex max-h-[82vh] w-full max-w-3xl flex-col p-5">
     <div class="mb-3 flex items-center justify-between">
       <h3 class="font-pl-display text-lg font-semibold text-pl-ink">Media library</h3>
       <span class="flex items-center gap-2">
-        <label class="pl-btn-gold cursor-pointer px-3 py-1.5 text-xs font-semibold">+ Upload<input data-up type="file" accept="image/*" multiple class="hidden"></label>
-        <button data-close class="pl-btn-ghost px-2.5 py-1 text-sm">Close</button>
+        <label class="button button--primary button--sm cursor-pointer">+ Upload<input data-up type="file" accept="image/*" multiple class="hidden"></label>
+        <button data-close class="button button--ghost button--sm">Close</button>
       </span>
     </div>
     <p data-status class="mb-2 text-xs text-pl-ink-2"></p>

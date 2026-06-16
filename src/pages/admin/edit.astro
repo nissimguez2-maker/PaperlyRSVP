@@ -14,6 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
     <title>Paperly Studio</title>
+    <link rel="stylesheet" href="/heroui.css" />
     <link rel="stylesheet" href="/site.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -90,7 +91,7 @@
       <header class="pl-topbar shrink-0 px-3 py-2">
         <a
           href="/admin"
-          class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-pl-paper/70 transition-colors hover:bg-white/10 hover:text-pl-paper"
+          class="button button--ghost button--sm inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-pl-paper/70 transition-colors hover:bg-white/10 hover:text-pl-paper"
         >
           <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="h-3.5 w-3.5">
             <path d="M10 3.5 5.5 8 10 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -106,14 +107,14 @@
         </span>
 
         <span class="ms-3 inline-flex overflow-hidden rounded-lg bg-white/[0.06] ring-1 ring-white/10">
-          <button id="pl-undo" title="Undo (Ctrl/Cmd+Z)" class="px-2.5 py-1.5 text-pl-paper/70 transition-colors hover:bg-white/10 hover:text-pl-paper">
+          <button id="pl-undo" title="Undo (Ctrl/Cmd+Z)" class="button button--ghost button--icon-only button--sm px-2.5 py-1.5 text-pl-paper/70 transition-colors hover:bg-white/10 hover:text-pl-paper">
             <svg viewBox="0 0 18 18" fill="none" aria-hidden="true" class="h-4 w-4">
               <path d="M6 5 3 8l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M3.5 8H11a4 4 0 0 1 0 8H8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
           <span class="my-1 w-px bg-white/10"></span>
-          <button id="pl-redo" title="Redo (Ctrl/Cmd+Shift+Z)" class="px-2.5 py-1.5 text-pl-paper/70 transition-colors hover:bg-white/10 hover:text-pl-paper">
+          <button id="pl-redo" title="Redo (Ctrl/Cmd+Shift+Z)" class="button button--ghost button--icon-only button--sm px-2.5 py-1.5 text-pl-paper/70 transition-colors hover:bg-white/10 hover:text-pl-paper">
             <svg viewBox="0 0 18 18" fill="none" aria-hidden="true" class="h-4 w-4">
               <path d="M12 5l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M14.5 8H7a4 4 0 0 0 0 8h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -127,14 +128,14 @@
           id="pl-view"
           href="#"
           target="_blank"
-          class="ms-1 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-pl-paper/85 ring-1 ring-white/20 transition-colors hover:bg-white/10 hover:text-pl-paper"
+          class="button button--ghost button--sm ms-1 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-pl-paper/85 ring-1 ring-white/20 transition-colors hover:bg-white/10 hover:text-pl-paper"
         >
           Preview
           <svg viewBox="0 0 14 14" fill="none" aria-hidden="true" class="h-3 w-3">
             <path d="M5 3h6v6M11 3 4 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </a>
-        <button id="pl-save" class="pl-btn-gold px-5 py-1.5 text-xs font-semibold shadow-sm">Save</button>
+        <button id="pl-save" class="button button--primary button--sm px-5 py-1.5 text-xs font-semibold shadow-sm">Save</button>
       </header>
 
       <div class="flex min-h-0 flex-1">
