@@ -5,8 +5,10 @@
  * to /thank-you.
  */
 import { type Env, verifyTurnstile, field, seeOther } from "../_shared";
+import { ensureSchema } from "../_sites";
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+  await ensureSchema(env);
   const form = await request.formData();
 
   const token = form.get("cf-turnstile-response");

@@ -77,3 +77,60 @@ export async function deleteSite(env: Env, slug: string): Promise<void> {
 
 export const slugify = (s: string): string =>
   s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+/**
+ * Create the database tables if they don't exist yet. This runs automatically
+ * the first time the dashboard or a form is used, so a fresh deploy needs ZERO
+ * manual SQL — just bind an empty D1 database and go. (The migrations/ files
+ * remain the canonical schema for reference / advanced use.)
+ */
+export async function ensureSchema(env: Env): Promise<void> {
+  await env.DB.batch([
+    env.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS sites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT NOT NULL UNIQUE,
+        title TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'building',
+        domain TEXT,
+        content TEXT NOT NULL,
+        theme TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+    ),
+    env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_sites_status ON sites (status)`),
+    env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_sites_domain ON sites (domain)`),
+    env.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS rsvps (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        site_id TEXT NOT NULL,
+        language TEXT,
+        full_name TEXT NOT NULL,
+        email TEXT,
+        phone TEXT,
+        attending TEXT NOT NULL,
+        guests INTEGER DEFAULT 0,
+        guest_names TEXT,
+        dietary TEXT,
+        message TEXT,
+        block_id TEXT,
+        event_label TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+    ),
+    env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_rsvps_site ON rsvps (site_id, created_at)`),
+    env.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS contact_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        site_id TEXT NOT NULL,
+        language TEXT,
+        name TEXT NOT NULL,
+        email TEXT,
+        message TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+    ),
+    env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_contact_site ON contact_messages (site_id, created_at)`),
+  ]);
+}

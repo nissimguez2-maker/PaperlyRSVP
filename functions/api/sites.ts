@@ -5,19 +5,21 @@
  * Admin-only.
  */
 import { type Env, requireAdmin, json } from "../_shared";
-import { listSites, getSiteBySlug, createSite, slugify } from "../_sites";
+import { listSites, getSiteBySlug, createSite, slugify, ensureSchema } from "../_sites";
 import { starterContent, starterTheme } from "../../src/lib/template";
 import type { EventType, Language, Direction } from "../../src/lib/types";
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const unauth = requireAdmin(request, env);
   if (unauth) return unauth;
+  await ensureSchema(env);
   return json(await listSites(env));
 };
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const unauth = requireAdmin(request, env);
   if (unauth) return unauth;
+  await ensureSchema(env);
 
   const body = (await request.json()) as {
     title?: string; language?: Language; direction?: Direction; eventType?: EventType;
