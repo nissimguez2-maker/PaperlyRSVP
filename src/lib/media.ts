@@ -20,12 +20,14 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
 }
 
 function tile(m: MediaItem): string {
-  return `<figure class="group relative overflow-hidden rounded-xl border border-neutral-200 bg-white">
-    <img src="${esc(m.url)}" alt="${esc(m.name ?? "")}" loading="lazy" class="aspect-square w-full object-cover">
-    <figcaption class="truncate px-2 py-1.5 text-[11px] text-neutral-500">${esc(m.name ?? m.key)}</figcaption>
+  return `<figure class="pl-card group relative overflow-hidden p-0">
+    <div class="overflow-hidden bg-pl-wash">
+      <img src="${esc(m.url)}" alt="${esc(m.name ?? "")}" loading="lazy" class="aspect-square w-full object-cover transition duration-500 group-hover:scale-[1.03]">
+    </div>
+    <figcaption class="truncate px-2.5 py-2 text-[11px] text-pl-ink-2">${esc(m.name ?? m.key)}</figcaption>
     <div class="absolute inset-x-0 top-0 flex justify-end gap-1 p-1.5 opacity-0 transition group-hover:opacity-100">
-      <button data-copy="${esc(m.url)}" class="rounded bg-white/90 px-2 py-1 text-[11px] shadow hover:bg-white">Copy URL</button>
-      <button data-del="${esc(m.key)}" class="rounded bg-red-600/90 px-2 py-1 text-[11px] text-white shadow hover:bg-red-600">Delete</button>
+      <button data-copy="${esc(m.url)}" class="rounded-md bg-pl-paper/95 px-2 py-1 text-[11px] font-medium text-pl-ink shadow-sm hover:bg-pl-paper">Copy URL</button>
+      <button data-del="${esc(m.key)}" class="rounded-md bg-red-700/90 px-2 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-red-700">Delete</button>
     </div>
   </figure>`;
 }
@@ -33,12 +35,12 @@ function tile(m: MediaItem): string {
 async function refresh(): Promise<void> {
   const root = document.getElementById("pl-media")!;
   const res = await fetch("/api/media", { headers: authHeaders() });
-  if (res.status === 401) { sessionStorage.removeItem("pl_admin"); root.innerHTML = `<p class="text-red-600">Wrong password. <button onclick="location.reload()" class="underline">Try again</button></p>`; return; }
-  if (!res.ok) { root.innerHTML = `<p class="text-red-600">Couldn't load media (${res.status}).</p>`; return; }
+  if (res.status === 401) { sessionStorage.removeItem("pl_admin"); root.innerHTML = `<p class="text-red-700">Wrong password. <button onclick="location.reload()" class="font-medium text-pl-gold underline underline-offset-2">Try again</button></p>`; return; }
+  if (!res.ok) { root.innerHTML = `<p class="text-red-700">Couldn't load media (${res.status}).</p>`; return; }
   const items = (await res.json()) as MediaItem[];
   root.innerHTML = items.length
     ? `<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">${items.map(tile).join("")}</div>`
-    : `<p class="rounded-2xl border border-dashed border-neutral-200 p-6 text-sm text-neutral-400">No media yet. Upload images here or from any site's editor.</p>`;
+    : `<p class="rounded-2xl border border-dashed border-pl-line bg-pl-paper/40 px-6 py-8 text-center text-sm text-pl-muted">No media yet. Upload images here or from any site's editor.</p>`;
 }
 
 async function upload(files: FileList): Promise<void> {

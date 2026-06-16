@@ -20,7 +20,7 @@ function authHeaders(): Record<string, string> {
   return { Authorization: "Basic " + btoa("admin:" + adminPw()) };
 }
 
-const cell = (v: unknown) => `<td class="border-b border-neutral-100 px-3 py-2 align-top">${esc(v ?? "")}</td>`;
+const cell = (v: unknown) => `<td class="border-b border-pl-line px-3 py-2.5 align-top text-pl-ink-2">${esc(v ?? "")}</td>`;
 
 export async function initResponses(): Promise<void> {
   const slug = new URLSearchParams(location.search).get("slug") || "";
@@ -30,8 +30,8 @@ export async function initResponses(): Promise<void> {
   if (dl) dl.href = `/api/export-rsvps?site=${encodeURIComponent(slug)}`;
 
   const res = await fetch(`/api/responses?site=${encodeURIComponent(slug)}`, { headers: authHeaders() });
-  if (res.status === 401) { sessionStorage.removeItem("pl_admin"); root.innerHTML = `<p class="text-red-600">Wrong password. <button onclick="location.reload()" class="underline">Try again</button></p>`; return; }
-  if (!res.ok) { root.innerHTML = `<p class="text-red-600">Couldn't load (${res.status}).</p>`; return; }
+  if (res.status === 401) { sessionStorage.removeItem("pl_admin"); root.innerHTML = `<p class="text-red-700">Wrong password. <button onclick="location.reload()" class="font-medium text-pl-gold underline underline-offset-2">Try again</button></p>`; return; }
+  if (!res.ok) { root.innerHTML = `<p class="text-red-700">Couldn't load (${res.status}).</p>`; return; }
   const { rsvps, contacts } = (await res.json()) as { rsvps: Rsvp[]; contacts: Contact[] };
 
   const yes = rsvps.filter((r) => r.attending === "yes");
@@ -45,30 +45,30 @@ export async function initResponses(): Promise<void> {
   const extraKeys: string[] = [];
   for (const o of parsed) for (const k of Object.keys(o)) if (!extraKeys.includes(k)) extraKeys.push(k);
 
-  const rsvpRows = rsvps.map((r, i) => `<tr>
+  const rsvpRows = rsvps.map((r, i) => `<tr class="odd:bg-pl-paper even:bg-pl-canvas/40 hover:bg-pl-wash/50">
     ${cell(r.created_at?.slice(0, 16))}${cell(r.event_label)}${cell(r.full_name)}
     ${cell(r.attending)}${cell(r.guests)}${cell(r.guest_names)}
     ${cell((r.email || "") + (r.phone ? " · " + r.phone : ""))}${cell(r.dietary)}${cell(r.message)}
     ${extraKeys.map((k) => cell(parsed[i][k])).join("")}
   </tr>`).join("");
-  const contactRows = contacts.map((c) => `<tr>${cell(c.created_at?.slice(0, 16))}${cell(c.name)}${cell(c.email)}${cell(c.message)}</tr>`).join("");
+  const contactRows = contacts.map((c) => `<tr class="odd:bg-pl-paper even:bg-pl-canvas/40 hover:bg-pl-wash/50">${cell(c.created_at?.slice(0, 16))}${cell(c.name)}${cell(c.email)}${cell(c.message)}</tr>`).join("");
 
-  const th = (labels: string[]) => `<tr class="text-start text-[11px] uppercase tracking-wide text-neutral-400">${labels.map((l) => `<th class="px-3 py-2 text-start font-medium">${l}</th>`).join("")}</tr>`;
+  const th = (labels: string[]) => `<tr class="border-b border-pl-line bg-pl-wash/40 text-start text-[11px] uppercase tracking-wide text-pl-muted">${labels.map((l) => `<th class="px-3 py-2.5 text-start font-medium">${l}</th>`).join("")}</tr>`;
   const rsvpCols = ["When", "Event", "Name", "Attending", "Guests", "Guest names", "Contact", "Dietary", "Message", ...extraKeys];
 
   root.innerHTML = `
-    <div class="mb-6 flex flex-wrap gap-3">
+    <div class="mb-7 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
       ${[["RSVPs", rsvps.length], ["Attending", yes.length], ["Guests", guests], ["Messages", contacts.length]]
-        .map(([k, v]) => `<div class="rounded-xl border border-neutral-200 bg-white px-5 py-3"><b class="block text-2xl text-neutral-900">${v}</b><span class="text-xs uppercase tracking-wide text-neutral-400">${k}</span></div>`).join("")}
+        .map(([k, v]) => `<div class="pl-card px-5 py-3.5 sm:min-w-32"><b class="block font-pl-display text-3xl font-medium text-pl-ink">${v}</b><span class="text-[11px] uppercase tracking-[0.12em] text-pl-muted">${k}</span></div>`).join("")}
     </div>
-    <h2 class="mb-2 text-lg font-semibold">RSVPs</h2>
-    <div class="mb-8 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
-      <table class="w-full text-sm"><thead>${th(rsvpCols)}</thead>
-      <tbody>${rsvpRows || `<tr><td class="p-4 text-neutral-400" colspan="${rsvpCols.length}">No RSVPs yet.</td></tr>`}</tbody></table>
+    <h2 class="mb-2.5 font-pl-display text-xl font-medium text-pl-ink">RSVPs</h2>
+    <div class="mb-8 overflow-x-auto rounded-2xl border border-pl-line bg-pl-paper shadow-pl">
+      <table class="w-full text-start text-sm"><thead>${th(rsvpCols)}</thead>
+      <tbody>${rsvpRows || `<tr><td class="px-4 py-6 text-center text-pl-muted" colspan="${rsvpCols.length}">No RSVPs yet.</td></tr>`}</tbody></table>
     </div>
-    <h2 class="mb-2 text-lg font-semibold">Messages</h2>
-    <div class="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
-      <table class="w-full text-sm"><thead>${th(["When", "Name", "Email", "Message"])}</thead>
-      <tbody>${contactRows || `<tr><td class="p-4 text-neutral-400" colspan="4">No messages yet.</td></tr>`}</tbody></table>
+    <h2 class="mb-2.5 font-pl-display text-xl font-medium text-pl-ink">Messages</h2>
+    <div class="overflow-x-auto rounded-2xl border border-pl-line bg-pl-paper shadow-pl">
+      <table class="w-full text-start text-sm"><thead>${th(["When", "Name", "Email", "Message"])}</thead>
+      <tbody>${contactRows || `<tr><td class="px-4 py-6 text-center text-pl-muted" colspan="4">No messages yet.</td></tr>`}</tbody></table>
     </div>`;
 }

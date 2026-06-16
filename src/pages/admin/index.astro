@@ -15,58 +15,69 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Paperly · Control panel</title>
     <link rel="stylesheet" href="/site.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+    />
     <link rel="icon" href="/favicon.svg" />
   </head>
-  <body class="min-h-screen bg-neutral-50 text-neutral-900">
-    <header class="flex flex-wrap items-center gap-3 bg-neutral-900 px-5 py-3 text-white">
-      <span class="font-semibold tracking-wide">Paperly</span>
-      <span class="rounded bg-white/10 px-2 py-0.5 text-xs">Control panel</span>
-      <nav class="ms-4 flex items-center gap-4 text-sm text-neutral-300">
-        <a href="/admin" class="text-white">Sites</a>
-        <a href="/admin/media" class="hover:text-white">Media library</a>
+  <body class="min-h-screen bg-pl-canvas font-pl-ui text-pl-ink">
+    <header class="pl-topbar sticky top-0 z-40 gap-4 px-4 py-3 sm:px-6">
+      <a href="/admin" class="flex items-center gap-2 text-pl-paper">
+        <span class="pl-wordmark">Paperly</span>
+        <span class="text-pl-gold-2" aria-hidden="true">·</span>
+      </a>
+      <span class="hidden rounded-full bg-pl-paper/10 px-2.5 py-0.5 text-[11px] tracking-wide text-pl-paper/70 sm:inline"
+        >Control panel</span
+      >
+      <nav class="ms-2 hidden items-center gap-5 text-sm text-pl-paper/65 sm:flex">
+        <a href="/admin" class="text-pl-paper transition-colors hover:text-pl-paper">Sites</a>
+        <a href="/admin/media" class="transition-colors hover:text-pl-paper">Media library</a>
       </nav>
-      <button id="pl-new" class="ms-auto rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-200">+ New site</button>
+      <button id="pl-new" class="pl-btn-gold ms-auto"><span aria-hidden="true">+</span> New site</button>
     </header>
 
-    <main class="mx-auto max-w-7xl px-5 py-8 sm:px-8">
-      <div id="pl-sites"><p class="text-neutral-400">Loading…</p></div>
+    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-10">
+      <div id="pl-sites"><p class="text-pl-muted">Loading…</p></div>
     </main>
 
     <!-- In-page "New site" form (replaces the old pop-ups) -->
-    <div id="pl-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h2 class="mb-1 text-lg font-semibold">Create a new site</h2>
-        <p class="mb-4 text-sm text-neutral-500">You can change everything later in the editor.</p>
+    <div id="pl-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-pl-ink/45 p-4 backdrop-blur-sm">
+      <div class="pl-card w-full max-w-md p-6 sm:p-7" style="box-shadow: var(--shadow-pl-lg);">
+        <h2 class="font-pl-display text-2xl font-medium text-pl-ink">Create a new site</h2>
+        <p class="mb-5 mt-1 text-sm text-pl-muted">You can change everything later in the editor.</p>
 
-        <label class="mb-1 block text-xs font-medium text-neutral-500">Site name</label>
-        <input id="pl-m-title" type="text" placeholder="e.g. Smith Wedding" class="mb-4 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900" />
+        <label for="pl-m-title" class="pl-label">Site name</label>
+        <input id="pl-m-title" type="text" placeholder="e.g. Smith Wedding" class="pl-input mb-4" />
 
         <div class="mb-4 grid grid-cols-2 gap-3">
           <div>
-            <label class="mb-1 block text-xs font-medium text-neutral-500">Language</label>
-            <select id="pl-m-lang" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">
+            <label for="pl-m-lang" class="pl-label">Language</label>
+            <select id="pl-m-lang" class="pl-select">
               <option value="en">English</option>
               <option value="he">Hebrew (עברית)</option>
               <option value="fr">French (Français)</option>
             </select>
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-neutral-500">Direction</label>
-            <select id="pl-m-dir" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">
+            <label for="pl-m-dir" class="pl-label">Direction</label>
+            <select id="pl-m-dir" class="pl-select">
               <option value="ltr">Left → Right</option>
               <option value="rtl">Right → Left</option>
             </select>
           </div>
         </div>
 
-        <label class="mb-1 block text-xs font-medium text-neutral-500">Start from</label>
-        <select id="pl-m-layout" class="mb-4 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">
+        <label for="pl-m-layout" class="pl-label">Start from</label>
+        <select id="pl-m-layout" class="pl-select mb-4">
           <option value="pdf">Invitation PDF + free blocks (recommended)</option>
           <option value="structured">Structured sections (hero, details, schedule…)</option>
         </select>
 
-        <label class="mb-1 block text-xs font-medium text-neutral-500">Event type</label>
-        <select id="pl-m-type" class="mb-4 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">
+        <label for="pl-m-type" class="pl-label">Event type</label>
+        <select id="pl-m-type" class="pl-select mb-4">
           <option value="wedding">Wedding</option>
           <option value="bar-mitzvah">Bar Mitzvah</option>
           <option value="bat-mitzvah">Bat Mitzvah</option>
@@ -77,10 +88,10 @@
           <option value="private">Private celebration</option>
         </select>
 
-        <p id="pl-m-error" class="mb-3 text-sm text-red-600"></p>
+        <p id="pl-m-error" class="mb-3 min-h-5 text-sm text-red-700"></p>
         <div class="flex justify-end gap-2">
-          <button id="pl-m-cancel" class="rounded-md px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100">Cancel</button>
-          <button id="pl-m-create" class="rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700">Create &amp; edit</button>
+          <button id="pl-m-cancel" class="pl-btn-ghost">Cancel</button>
+          <button id="pl-m-create" class="pl-btn-gold">Create &amp; edit</button>
         </div>
       </div>
     </div>

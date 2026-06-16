@@ -14,14 +14,33 @@
     <meta name="robots" content="noindex" />
     <title>Thank you</title>
     <link rel="stylesheet" href="/site.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+    />
     <link rel="icon" href="/favicon.svg" />
   </head>
-  <body class="bg-bg text-ink">
-    <main class="flex min-h-screen items-center justify-center px-6 py-24 text-center">
-      <div class="max-w-lg">
-        <h1 id="ty-title" class="font-heading text-4xl text-primary sm:text-5xl">Thank you!</h1>
-        <p id="ty-body" class="mt-5 text-lg text-muted"></p>
-        <div class="mt-10"><a id="ty-back" href="/" class="btn-outline">Back to the invitation</a></div>
+  <body class="bg-pl-canvas text-pl-ink">
+    <main class="flex min-h-screen items-center justify-center px-6 py-20 text-center">
+      <div class="pl-card mx-auto w-full max-w-lg px-8 py-12 sm:px-12 sm:py-14" style="box-shadow: var(--shadow-pl-lg);">
+        <!-- Gold seal with a check + small flourish -->
+        <div class="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-full bg-pl-wash ring-1 ring-pl-gold/25">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-pl-gold" aria-hidden="true">
+            <path d="M5 12.5 10 17.5 19 7" />
+          </svg>
+        </div>
+        <div class="mb-5 flex items-center justify-center gap-3 text-pl-gold/60" aria-hidden="true">
+          <span class="h-px w-10 bg-pl-gold/30"></span>
+          <span class="text-xs">✦</span>
+          <span class="h-px w-10 bg-pl-gold/30"></span>
+        </div>
+        <h1 id="ty-title" class="font-pl-display text-4xl font-medium text-pl-ink sm:text-5xl">Thank you!</h1>
+        <p id="ty-body" class="mx-auto mt-4 max-w-md text-lg leading-relaxed text-pl-ink-2"></p>
+        <div class="mt-9">
+          <a id="ty-back" href="/" class="pl-btn-ghost border border-pl-line px-6 py-2.5">Back to the invitation</a>
+        </div>
       </div>
     </main>
 

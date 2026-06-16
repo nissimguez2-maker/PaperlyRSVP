@@ -40,49 +40,71 @@ const GROUPS: { status: Status; label: string; hint: string }[] = [
   { status: "archived", label: "Past", hint: "Taken down / finished events" },
 ];
 
+/** Brand status chips. Every class is a literal so Tailwind emits it. */
 const BADGE: Record<Status, string> = {
-  active: "bg-green-100 text-green-700",
-  building: "bg-amber-100 text-amber-700",
-  paused: "bg-neutral-200 text-neutral-600",
-  archived: "bg-neutral-100 text-neutral-400",
+  active: "bg-pl-sage/15 text-pl-forest",
+  building: "bg-pl-wash text-pl-gold",
+  paused: "bg-pl-line/60 text-pl-ink-2",
+  archived: "bg-pl-canvas text-pl-muted",
 };
+/** Human-readable status word shown in the chip (the raw status is e.g. "active"). */
+const STATUS_LABEL: Record<Status, string> = {
+  active: "Live",
+  building: "In progress",
+  paused: "Paused",
+  archived: "Past",
+};
+/** Small dot inside the chip, matching the status colour. */
+const DOT: Record<Status, string> = {
+  active: "bg-pl-sage",
+  building: "bg-pl-gold",
+  paused: "bg-pl-muted",
+  archived: "bg-pl-muted/60",
+};
+
+// Inline icons (literal strings only) — small, warm, stationery-grade.
+const ICON_HEART =
+  `<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13.5S2 9.8 2 5.9A2.9 2.9 0 0 1 8 4.5a2.9 2.9 0 0 1 6 1.4C14 9.8 8 13.5 8 13.5Z"/></svg>`;
+const ICON_MAIL =
+  `<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><path d="m2.5 4.5 5.5 4 5.5-4"/></svg>`;
 
 /** Buttons available per lifecycle state. */
 function actions(s: SiteSummary): string {
-  const btn = (act: string, label: string, cls = "bg-neutral-100 text-neutral-700 hover:bg-neutral-200") =>
-    `<button data-act="${act}" data-slug="${esc(s.slug)}" class="rounded-md px-2.5 py-1.5 text-xs ${cls}">${label}</button>`;
-  const edit = `<a href="/admin/edit?slug=${encodeURIComponent(s.slug)}" class="rounded-md bg-neutral-900 px-2.5 py-1.5 text-xs text-white hover:bg-neutral-700">Edit</a>`;
-  const view = `<a href="/s/${encodeURIComponent(s.slug)}" target="_blank" class="rounded-md px-2.5 py-1.5 text-xs text-neutral-600 hover:bg-neutral-100">View</a>`;
+  const btn = (act: string, label: string, cls = "pl-btn-ghost") =>
+    `<button data-act="${act}" data-slug="${esc(s.slug)}" class="${cls} px-3 py-1.5 text-xs">${label}</button>`;
+  const edit = `<a href="/admin/edit?slug=${encodeURIComponent(s.slug)}" class="pl-btn px-3 py-1.5 text-xs">Edit</a>`;
+  const view = `<a href="/s/${encodeURIComponent(s.slug)}" target="_blank" class="pl-btn-ghost px-3 py-1.5 text-xs">View</a>`;
   const out: string[] = [edit, view];
-  if (s.status !== "active") out.push(btn("publish", "Publish", "bg-green-600 text-white hover:bg-green-700"));
+  if (s.status !== "active") out.push(btn("publish", "Publish", "pl-btn-gold"));
   if (s.status === "active") out.push(btn("pause", "Pause"));
   if (s.status === "active" || s.status === "paused") out.push(btn("archive", "Take down"));
   if (s.status === "archived") out.push(btn("restore", "Restore"));
   out.push(btn("rsvps", "RSVPs"));
   out.push(btn("duplicate", "Duplicate"));
   out.push(btn("domain", "Domain"));
-  out.push(btn("delete", "Delete", "bg-red-50 text-red-600 hover:bg-red-100"));
+  out.push(btn("delete", "Delete", "pl-btn-danger"));
   return out.join(" ");
 }
 
 function card(s: SiteSummary): string {
   const cover = s.cover
-    ? `<img src="${esc(s.cover)}" alt="" class="h-full w-full object-cover">`
-    : `<div class="h-full w-full bg-gradient-to-br from-neutral-200 to-neutral-100"></div>`;
-  return `<div class="flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md">
-    <a href="/admin/edit?slug=${encodeURIComponent(s.slug)}" class="block aspect-[16/9] overflow-hidden">${cover}</a>
+    ? `<img src="${esc(s.cover)}" alt="" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]">`
+    : `<div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-pl-wash via-pl-paper to-pl-canvas">
+        <svg viewBox="0 0 48 48" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.1" class="text-pl-gold/55" aria-hidden="true"><rect x="9" y="7" width="30" height="34" rx="2.5"/><path d="M15 16h18M15 22h18M15 28h12"/></svg>
+      </div>`;
+  return `<div class="pl-card group flex flex-col overflow-hidden transition-shadow duration-200 hover:shadow-pl-lg">
+    <a href="/admin/edit?slug=${encodeURIComponent(s.slug)}" class="relative block aspect-[16/9] overflow-hidden bg-pl-wash">${cover}
+      <span class="pl-chip absolute end-2.5 top-2.5 ${BADGE[s.status]} shadow-sm backdrop-blur-sm"><span class="h-1.5 w-1.5 rounded-full ${DOT[s.status]}"></span>${STATUS_LABEL[s.status]}</span>
+    </a>
     <div class="flex flex-1 flex-col p-4">
-      <div class="flex items-start justify-between gap-2">
-        <span class="truncate font-medium text-neutral-900">${esc(s.title)}</span>
-        <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] ${BADGE[s.status]}">${s.status}</span>
+      <span class="truncate font-medium text-pl-ink">${esc(s.title)}</span>
+      <div class="mt-1 truncate text-xs text-pl-muted">/s/${esc(s.slug)}${s.domain ? " · " + esc(s.domain) : ""}</div>
+      <div class="mt-3 flex items-center gap-4 text-xs text-pl-ink-2">
+        <span class="inline-flex items-center gap-1.5 text-pl-gold" title="RSVPs">${ICON_HEART}<span class="text-pl-ink-2">${s.rsvp_count} RSVPs</span></span>
+        <span class="inline-flex items-center gap-1.5 text-pl-muted" title="Messages">${ICON_MAIL}<span class="text-pl-ink-2">${s.contact_count}</span></span>
       </div>
-      <div class="mt-1 truncate text-xs text-neutral-400">/s/${esc(s.slug)}${s.domain ? " · " + esc(s.domain) : ""}</div>
-      <div class="mt-3 flex items-center gap-4 text-xs text-neutral-600">
-        <span title="RSVPs">♥ ${s.rsvp_count} RSVPs</span>
-        <span title="Messages">✉ ${s.contact_count}</span>
-      </div>
-      <div class="mt-1 text-[11px] text-neutral-400">created ${fmtDate(s.created_at)} · updated ${fmtDate(s.updated_at)}</div>
-      <div class="mt-4 flex flex-wrap items-center gap-1.5 border-t border-neutral-100 pt-3">${actions(s)}</div>
+      <div class="mt-1.5 text-[11px] text-pl-muted">created ${fmtDate(s.created_at)} · updated ${fmtDate(s.updated_at)}</div>
+      <div class="mt-4 flex flex-wrap items-center gap-1.5 border-t border-pl-line pt-3">${actions(s)}</div>
     </div>
   </div>`;
 }
@@ -90,18 +112,21 @@ function card(s: SiteSummary): string {
 async function refresh(): Promise<void> {
   const root = document.getElementById("pl-sites")!;
   const res = await fetch("/api/sites", { headers: authHeaders() });
-  if (res.status === 401) { sessionStorage.removeItem("pl_admin"); root.innerHTML = `<p class="text-red-600">Wrong password. <button onclick="location.reload()" class="underline">Try again</button></p>`; return; }
-  if (!res.ok) { root.innerHTML = `<p class="text-red-600">${esc(await errText(res))}</p>`; return; }
+  if (res.status === 401) { sessionStorage.removeItem("pl_admin"); root.innerHTML = `<p class="text-red-700">Wrong password. <button onclick="location.reload()" class="font-medium text-pl-gold underline underline-offset-2">Try again</button></p>`; return; }
+  if (!res.ok) { root.innerHTML = `<p class="text-red-700">${esc(await errText(res))}</p>`; return; }
   const sites = (await res.json()) as SiteSummary[];
 
   root.innerHTML = GROUPS.map((g) => {
     const items = sites.filter((s) => s.status === g.status);
-    return `<section class="mb-10">
-      <div class="mb-4 flex items-baseline gap-3"><h2 class="text-xl font-semibold text-neutral-900">${g.label}</h2>
-        <span class="text-xs text-neutral-400">${g.hint}</span><span class="ms-auto text-xs text-neutral-400">${items.length}</span></div>
+    return `<section class="mb-12">
+      <div class="mb-4 flex items-baseline gap-3 border-b border-pl-line pb-2">
+        <h2 class="font-pl-display text-2xl font-medium tracking-[-0.01em] text-pl-ink">${g.label}</h2>
+        <span class="text-xs text-pl-muted">${g.hint}</span>
+        <span class="ms-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-pl-wash px-1.5 text-[11px] font-medium text-pl-gold">${items.length}</span>
+      </div>
       ${items.length
         ? `<div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">${items.map(card).join("")}</div>`
-        : `<p class="rounded-2xl border border-dashed border-neutral-200 p-6 text-sm text-neutral-400">Nothing here yet.</p>`}
+        : `<p class="rounded-2xl border border-dashed border-pl-line bg-pl-paper/40 px-6 py-8 text-center text-sm text-pl-muted">Nothing here yet.</p>`}
     </section>`;
   }).join("");
 }
