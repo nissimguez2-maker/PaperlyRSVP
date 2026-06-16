@@ -142,7 +142,12 @@ function fieldHtml(field: Field, base: string, value: any): string {
         ? `<img src="${esc(value)}" alt="" class="mb-2 h-24 w-full rounded-md object-cover border border-neutral-200">`
         : `<div class="mb-2 flex h-24 w-full items-center justify-center rounded-md border border-dashed border-neutral-300 text-xs text-neutral-400">No image</div>`;
       return I.group(field.label,
-        `${thumb}<input type="file" accept="image/*" data-file="${path}" class="block w-full text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white"><p class="mt-1 text-[11px] text-neutral-400">Uploaded full-resolution (HD).</p>`);
+        `${thumb}
+        <div class="flex items-center gap-2">
+          <input type="file" accept="image/*" data-file="${path}" class="block flex-1 text-xs text-neutral-600 file:mr-2 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-white">
+          <button type="button" data-action="pick-media" data-path="${path}" class="shrink-0 rounded-md border border-neutral-300 px-2.5 py-1.5 text-xs hover:bg-neutral-100">Library</button>
+        </div>
+        <p class="mt-1 text-[11px] text-neutral-400">Uploaded full-resolution (HD), saved to your media library.</p>`);
     }
     case "link": {
       const v = value ?? {};
@@ -366,6 +371,10 @@ function markDirty(): void {
 function handleAction(action: string, el: HTMLElement): void {
   const key = el.getAttribute("data-key") as SectionKey | null;
   const path = el.getAttribute("data-path");
+  if (action === "pick-media" && path) {
+    void pickFromLibrary(path);
+    return;
+  }
   if (action.startsWith("sec-") && key) {
     const order = orderedKeys();
     const idx = order.indexOf(key);
@@ -418,6 +427,35 @@ async function uploadImage(file: File, path: string): Promise<void> {
   const { url } = (await res.json()) as { url: string };
   setByPath(state, path, url);
   markDirty(); renderPanel(); renderPreviewNow();
+}
+
+/** Open the media library in a modal and set the chosen image at `path`. */
+async function pickFromLibrary(path: string): Promise<void> {
+  const overlay = document.createElement("div");
+  overlay.className = "fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4";
+  overlay.innerHTML = `<div class="flex max-h-[80vh] w-full max-w-3xl flex-col rounded-2xl bg-white p-5 shadow-xl">
+    <div class="mb-3 flex items-center justify-between"><h3 class="font-semibold">Media library</h3>
+      <button data-close class="rounded px-2 py-1 text-sm text-neutral-500 hover:bg-neutral-100">Close</button></div>
+    <div data-grid class="grid grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4"><p class="text-sm text-neutral-400">Loading…</p></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.addEventListener("click", (e) => { if (e.target === overlay || (e.target as HTMLElement).hasAttribute("data-close")) close(); });
+
+  const grid = overlay.querySelector("[data-grid]")!;
+  const res = await fetch("/api/media", { headers: authHeaders() });
+  if (!res.ok) { grid.innerHTML = `<p class="text-sm text-red-600">Couldn't load library.</p>`; return; }
+  const items = (await res.json()) as { url: string; name: string | null }[];
+  grid.innerHTML = items.length
+    ? items.map((m) => `<button data-url="${esc(m.url)}" class="overflow-hidden rounded-lg border border-neutral-200 hover:ring-2 hover:ring-neutral-900"><img src="${esc(m.url)}" alt="${esc(m.name ?? "")}" class="aspect-square w-full object-cover"></button>`).join("")
+    : `<p class="text-sm text-neutral-400">No media yet — upload from here or the Media library page.</p>`;
+  grid.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-url]");
+    if (!btn) return;
+    setByPath(state, path, btn.dataset.url);
+    markDirty(); renderPanel(); renderPreviewNow();
+    close();
+  });
 }
 
 // --- save / load -----------------------------------------------------------

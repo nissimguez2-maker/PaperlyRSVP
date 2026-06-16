@@ -26,14 +26,26 @@ export interface SiteSummary {
   title: string;
   status: SiteStatus;
   domain: string | null;
+  cover: string | null;
+  created_at: string;
   updated_at: string;
+  rsvp_count: number;
+  contact_count: number;
 }
 
 export async function listSites(env: Env): Promise<SiteSummary[]> {
   const { results } = await env.DB.prepare(
-    "SELECT slug, title, status, domain, updated_at FROM sites ORDER BY updated_at DESC",
+    `SELECT s.slug, s.title, s.status, s.domain, s.cover, s.created_at, s.updated_at,
+       (SELECT COUNT(*) FROM rsvps r WHERE r.site_id = s.slug) AS rsvp_count,
+       (SELECT COUNT(*) FROM contact_messages c WHERE c.site_id = s.slug) AS contact_count
+     FROM sites s ORDER BY s.updated_at DESC`,
   ).all<SiteSummary>();
   return results ?? [];
+}
+
+/** Pull a sensible cover image (hero photo, else page background) from content. */
+function coverFrom(content: any): string | null {
+  return content?.sections?.hero?.image ?? content?.background?.image ?? null;
 }
 
 export function getSiteBySlug(env: Env, slug: string): Promise<SiteRow | null> {
@@ -49,18 +61,67 @@ export async function createSite(
   s: { slug: string; title: string; content: unknown; theme: unknown; status?: SiteStatus },
 ): Promise<void> {
   await env.DB.prepare(
-    "INSERT INTO sites (slug, title, status, content, theme) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO sites (slug, title, status, content, theme, cover) VALUES (?, ?, ?, ?, ?, ?)",
   )
-    .bind(s.slug, s.title, s.status ?? "building", JSON.stringify(s.content), JSON.stringify(s.theme))
+    .bind(s.slug, s.title, s.status ?? "building", JSON.stringify(s.content), JSON.stringify(s.theme), coverFrom(s.content))
     .run();
 }
 
 export async function saveSiteContent(env: Env, slug: string, content: unknown, theme: unknown, title?: string): Promise<void> {
   await env.DB.prepare(
-    "UPDATE sites SET content = ?, theme = ?, title = COALESCE(?, title), updated_at = datetime('now') WHERE slug = ?",
+    "UPDATE sites SET content = ?, theme = ?, title = COALESCE(?, title), cover = ?, updated_at = datetime('now') WHERE slug = ?",
   )
-    .bind(JSON.stringify(content), JSON.stringify(theme), title ?? null, slug)
+    .bind(JSON.stringify(content), JSON.stringify(theme), title ?? null, coverFrom(content), slug)
     .run();
+}
+
+/** Duplicate a site as a fresh "building" draft with a new unique slug. */
+export async function duplicateSite(env: Env, slug: string): Promise<string | null> {
+  const src = await getSiteBySlug(env, slug);
+  if (!src) return null;
+  const base = `${src.slug}-copy`;
+  let next = base;
+  let n = 1;
+  while (await getSiteBySlug(env, next)) next = `${base}-${++n}`;
+  const content = JSON.parse(src.content);
+  content.siteId = next; // so RSVPs from the copy are tracked under the new slug
+  await createSite(env, { slug: next, title: `${src.title} (copy)`, content, theme: JSON.parse(src.theme), status: "building" });
+  return next;
+}
+
+// --- media library ---------------------------------------------------------
+
+export interface MediaRow {
+  id: number;
+  key: string;
+  url: string;
+  name: string | null;
+  content_type: string | null;
+  size: number | null;
+  slug: string | null;
+  created_at: string;
+}
+
+export async function listMedia(env: Env): Promise<MediaRow[]> {
+  const { results } = await env.DB.prepare(
+    "SELECT * FROM media ORDER BY created_at DESC LIMIT 500",
+  ).all<MediaRow>();
+  return results ?? [];
+}
+
+export async function insertMedia(
+  env: Env,
+  m: { key: string; url: string; name?: string | null; content_type?: string | null; size?: number | null; slug?: string | null },
+): Promise<void> {
+  await env.DB.prepare(
+    "INSERT OR IGNORE INTO media (key, url, name, content_type, size, slug) VALUES (?, ?, ?, ?, ?, ?)",
+  )
+    .bind(m.key, m.url, m.name ?? null, m.content_type ?? null, m.size ?? null, m.slug ?? null)
+    .run();
+}
+
+export async function deleteMediaByKey(env: Env, key: string): Promise<void> {
+  await env.DB.prepare("DELETE FROM media WHERE key = ?").bind(key).run();
 }
 
 export async function setStatus(env: Env, slug: string, status: SiteStatus): Promise<void> {
@@ -95,12 +156,26 @@ export async function ensureSchema(env: Env): Promise<void> {
         domain TEXT,
         content TEXT NOT NULL,
         theme TEXT NOT NULL,
+        cover TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`,
     ),
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_sites_status ON sites (status)`),
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_sites_domain ON sites (domain)`),
+    env.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS media (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT NOT NULL UNIQUE,
+        url TEXT NOT NULL,
+        name TEXT,
+        content_type TEXT,
+        size INTEGER,
+        slug TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+    ),
+    env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_media_created ON media (created_at)`),
     env.DB.prepare(
       `CREATE TABLE IF NOT EXISTS rsvps (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -133,4 +208,15 @@ export async function ensureSchema(env: Env): Promise<void> {
     ),
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_contact_site ON contact_messages (site_id, created_at)`),
   ]);
+
+  // One-time, idempotent migration: add `cover` to databases created before it
+  // existed (CREATE TABLE IF NOT EXISTS won't add columns to an existing table).
+  try {
+    const cols = await env.DB.prepare("PRAGMA table_info(sites)").all<{ name: string }>();
+    if (!(cols.results ?? []).some((c) => c.name === "cover")) {
+      await env.DB.prepare("ALTER TABLE sites ADD COLUMN cover TEXT").run();
+    }
+  } catch {
+    /* best-effort; ignore */
+  }
 }

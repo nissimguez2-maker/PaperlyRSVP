@@ -3,12 +3,14 @@
  * Single-site API (admin-only):
  *   GET    /api/site/<slug>   → { content, theme, status, domain }
  *   PUT    /api/site/<slug>   → save { content, theme } (from the Studio)
+ *   POST   /api/site/<slug>   → duplicate the site → { slug: newSlug }
  *   PATCH  /api/site/<slug>   → { status?, domain? }  (pause / publish / domain)
  *   DELETE /api/site/<slug>   → remove the site
  */
 import { type Env, requireAdmin, json, hasDb, DB_MISSING_MSG, errorJson } from "../../_shared";
 import {
-  getSiteBySlug, saveSiteContent, setStatus, setDomain, deleteSite, ensureSchema, type SiteStatus,
+  getSiteBySlug, saveSiteContent, setStatus, setDomain, deleteSite, duplicateSite,
+  ensureSchema, type SiteStatus,
 } from "../../_sites";
 
 const STATUSES: SiteStatus[] = ["building", "active", "paused", "archived"];
@@ -30,6 +32,11 @@ export const onRequest: PagesFunction<Env> = async ({ request, env, params }) =>
         slug: site.slug, title: site.title, status: site.status, domain: site.domain,
         content: JSON.parse(site.content), theme: JSON.parse(site.theme),
       });
+
+    case "POST": {
+      const newSlug = await duplicateSite(env, slug);
+      return json({ slug: newSlug }, 201);
+    }
 
     case "PUT": {
       const body = (await request.json()) as { content: any; theme: any };

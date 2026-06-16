@@ -1,0 +1,45 @@
+---
+/**
+ * Media library page — a reusable bank of all uploaded images, shared across
+ * every site. Data loads client-side from /api/media (admin-protected).
+ */
+---
+
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Paperly · Media library</title>
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body class="min-h-screen bg-neutral-50 text-neutral-900">
+    <header class="flex flex-wrap items-center gap-3 bg-neutral-900 px-5 py-3 text-white">
+      <span class="font-semibold tracking-wide">Paperly</span>
+      <span class="rounded bg-white/10 px-2 py-0.5 text-xs">Media library</span>
+      <nav class="ms-4 flex items-center gap-4 text-sm text-neutral-300">
+        <a href="/admin" class="hover:text-white">Sites</a>
+        <a href="/admin/media" class="text-white">Media library</a>
+      </nav>
+      <label class="ms-auto cursor-pointer rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-200">
+        + Upload
+        <input id="pl-upload" type="file" accept="image/*" multiple class="hidden" />
+      </label>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-5 py-8 sm:px-8">
+      <p class="mb-4 text-sm text-neutral-500">
+        Everything you upload (here or from a site's editor) lives here so you can reuse it across clients.
+      </p>
+      <p id="pl-upload-status" class="mb-4 text-sm text-neutral-500"></p>
+      <div id="pl-media"><p class="text-neutral-400">Loading…</p></div>
+    </main>
+
+    <script>
+      import { initMedia } from "../../lib/media";
+      initMedia();
+    </script>
+  </body>
+</html>
