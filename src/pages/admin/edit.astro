@@ -1,9 +1,9 @@
 ---
 /**
- * The visual editor (Paperly Studio), hosted in the control panel.
- * Opens with ?slug=<slug>; loads that site from the database, lets you edit it
- * visually, and saves back. Editor chrome is always English / LTR; only the
- * PREVIEW reflects the site's real language and direction.
+ * Paperly Studio — the visual editor (Canva-style chrome).
+ * Opens with ?slug=<slug>; loads that site, edits it visually, saves back.
+ * Editor chrome is always English / LTR; only the PREVIEW reflects the site's
+ * real language and direction.
  */
 ---
 
@@ -18,38 +18,70 @@
     <link rel="icon" href="/favicon.svg" />
     <style is:global>
       html, body { height: 100%; }
-      body { background: #f3f3f1; overflow: hidden; }
-      #pl-frame { height: 100%; display: flex; }
+      body { background: #ececed; overflow: hidden; }
+
+      /* Device stage */
+      #pl-stage { display: grid; place-items: center; }
+      #pl-frame { height: 100%; display: flex; align-items: center; justify-content: center; }
       #pl-frame.pl-phone #pl-frame-iframe {
-        width: 390px; max-width: 100%; height: 100%; margin: 0 auto;
-        border: 1px solid #e5e5e5; border-radius: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.15); background: #fff;
+        width: 402px; max-width: 100%; height: calc(100% - 32px);
+        border: 10px solid #111; border-radius: 44px; background: #fff;
+        box-shadow: 0 30px 70px rgba(0,0,0,.28);
       }
-      #pl-frame.pl-desktop #pl-frame-iframe { width: 100%; height: 100%; border: 1px solid #e5e5e5; border-radius: 8px; background: #fff; }
+      #pl-frame.pl-desktop #pl-frame-iframe {
+        width: 100%; height: 100%; border: 1px solid #d9d9da; border-radius: 12px; background: #fff;
+        box-shadow: 0 18px 50px rgba(0,0,0,.14);
+      }
       #pl-frame-iframe { border: 0; }
+
+      /* Device toggle active state (light toolbar) */
+      .pl-dev-active { background: #111 !important; color: #fff !important; }
+
+      /* Collapsible property groups: rotate the caret when open */
+      details.pl-group[open] .pl-caret { transform: rotate(180deg); }
+
+      /* Rail buttons */
+      .pl-rail-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 6px; border-radius:12px; font-size:10px; }
     </style>
   </head>
   <body>
     <div class="flex h-full flex-col">
-      <header class="flex flex-wrap items-center gap-3 bg-neutral-900 px-4 py-2.5 text-white">
-        <a href="/admin" class="rounded-md border border-white/30 px-2.5 py-1 text-xs hover:bg-white/10">← Sites</a>
+      <!-- App bar -->
+      <header class="flex items-center gap-3 bg-neutral-900 px-3 py-2 text-white">
+        <a href="/admin" class="rounded-md px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white">← Sites</a>
         <span class="font-semibold tracking-wide">Paperly&nbsp;Studio</span>
-        <div class="ms-2 flex overflow-hidden rounded-md border border-white/20">
-          <button data-device="phone" class="px-3 py-1 text-xs ring-2 ring-white">Phone</button>
-          <button data-device="desktop" class="px-3 py-1 text-xs">Desktop</button>
-        </div>
-        <span class="ms-2 flex overflow-hidden rounded-md border border-white/20">
-          <button id="pl-undo" title="Undo (Ctrl/Cmd+Z)" class="px-3 py-1 text-xs hover:bg-white/10">↶</button>
-          <button id="pl-redo" title="Redo (Ctrl/Cmd+Shift+Z)" class="px-3 py-1 text-xs hover:bg-white/10">↷</button>
+        <span class="ms-1 flex overflow-hidden rounded-md border border-white/15">
+          <button id="pl-undo" title="Undo (Ctrl/Cmd+Z)" class="px-2.5 py-1 text-sm hover:bg-white/10">↶</button>
+          <button id="pl-redo" title="Redo (Ctrl/Cmd+Shift+Z)" class="px-2.5 py-1 text-sm hover:bg-white/10">↷</button>
         </span>
         <span id="pl-status" class="ms-auto text-xs text-neutral-300">Loading…</span>
-        <a id="pl-view" href="#" target="_blank" class="rounded-md border border-white/30 px-3 py-1.5 text-xs hover:bg-white/10">Preview</a>
-        <button id="pl-save" class="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-neutral-200">Save</button>
+        <a id="pl-view" href="#" target="_blank" class="rounded-md border border-white/25 px-3 py-1.5 text-xs hover:bg-white/10">Preview ↗</a>
+        <button id="pl-save" class="rounded-md bg-white px-4 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-neutral-200">Save</button>
       </header>
 
-      <div class="flex min-h-0 flex-1 flex-col md:flex-row">
-        <aside id="pl-panel" class="h-1/2 w-full shrink-0 overflow-y-auto border-e border-neutral-200 bg-white md:h-auto md:w-[360px]"></aside>
-        <main id="pl-stage" class="min-h-0 flex-1 overflow-hidden bg-neutral-100 p-4">
-          <div id="pl-frame" class="pl-phone"><iframe id="pl-frame-iframe" title="Live preview"></iframe></div>
+      <div class="flex min-h-0 flex-1">
+        <!-- Left icon rail -->
+        <nav class="flex w-16 shrink-0 flex-col items-center gap-1.5 bg-neutral-900 py-3 text-neutral-400">
+          <button data-rail="sections" class="pl-rail-btn hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">▤</span>Sections</button>
+          <button data-rail="theme" class="pl-rail-btn hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">🎨</span>Theme</button>
+          <button data-rail="settings" class="pl-rail-btn hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">⚙</span>Settings</button>
+          <a href="/admin/media" class="pl-rail-btn mt-1 text-neutral-400 hover:bg-white/10 hover:text-white"><span class="text-lg leading-none">🖼</span>Media</a>
+        </nav>
+
+        <!-- Properties panel -->
+        <aside id="pl-panel" class="w-[340px] shrink-0 overflow-y-auto border-e border-neutral-200 bg-white"></aside>
+
+        <!-- Canvas / device stage -->
+        <main class="flex min-h-0 flex-1 flex-col bg-[#ececed]">
+          <div class="flex items-center justify-center gap-1 border-b border-neutral-200 bg-white/70 py-1.5">
+            <div class="flex overflow-hidden rounded-lg border border-neutral-300 text-xs">
+              <button data-device="phone" class="pl-dev-active px-3 py-1">Phone</button>
+              <button data-device="desktop" class="px-3 py-1">Desktop</button>
+            </div>
+          </div>
+          <div id="pl-stage" class="min-h-0 flex-1 overflow-hidden p-5">
+            <div id="pl-frame" class="pl-phone"><iframe id="pl-frame-iframe" title="Live preview"></iframe></div>
+          </div>
         </main>
       </div>
     </div>

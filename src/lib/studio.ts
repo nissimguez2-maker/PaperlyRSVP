@@ -17,6 +17,7 @@ import { renderApp, resolveLabels, themeCss, esc } from "./render";
 import { SCHEMA_BY_KEY, SECTION_SCHEMAS, type Field } from "./schema";
 import { DEFAULT_DESIGN } from "./design";
 import { FONTS, cssStack, googleFontsUrl } from "./fonts";
+import { optimizeImage } from "./imageopt";
 
 interface State {
   slug: string;
@@ -100,36 +101,7 @@ function refreshPreview(): void {
   refreshTimer = window.setTimeout(renderPreviewNow, 180);
 }
 
-function renderPreviewNow(): void {
-  const iframe = document.getElementById("pl-frame-iframe") as HTMLIFrameElement | null;
-  if (!iframe) return;
-  const scrollY = iframe.contentWindow?.scrollY ?? 0;
-
-  const body = renderApp(state.content, { labels: resolveLabels(state.content), editor: true });
-  const font = state.theme.fonts.importUrl
-    ? `<link rel="stylesheet" href="${esc(state.theme.fonts.importUrl)}">`
-    : "";
-  iframe.srcdoc = `<!doctype html><html lang="${state.content.language}" dir="${state.content.direction}">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="/site.css">${font}<style>${themeCss(state.theme)} body{overflow-x:hidden}</style></head>
-<body>${body}</body></html>`;
-
-  iframe.onload = () => {
-    const doc = iframe.contentDocument;
-    if (!doc) return;
-    iframe.contentWindow?.scrollTo(0, scrollY);
-    doc.querySelectorAll<HTMLElement>("[data-pl-section]").forEach((el) => {
-      el.style.cursor = "pointer";
-      el.addEventListener("click", (e) => {
-        const a = (e.target as HTMLElement).closest("a");
-        if (a) e.preventDefault();
-        selectSection(el.getAttribute("data-pl-section") as SectionKey);
-      });
-    });
-    doc.querySelectorAll("[data-editor-form]").forEach((f) => f.addEventListener("submit", (e) => e.preventDefault()));
-    applySelectionOutline();
-  };
-}
+let previewReady = false;
 
 /** Get the live preview document (without rebuilding it). */
 function previewDoc(): Document | null {
@@ -138,15 +110,70 @@ function previewDoc(): Document | null {
 }
 
 /**
- * Draw the selection outline on the EXISTING preview DOM (no srcdoc rebuild, so
- * no flash). Called on selection and after each real re-render.
+ * Update the preview. The FIRST call builds the document; every later call
+ * swaps only <body> in place (no document reload) so the scroll position is
+ * preserved and there is NO jump/flicker — selection AND edits stay put.
  */
+function renderPreviewNow(): void {
+  const iframe = document.getElementById("pl-frame-iframe") as HTMLIFrameElement | null;
+  if (!iframe) return;
+  const body = renderApp(state.content, { labels: resolveLabels(state.content), editor: true });
+  const importUrl = state.theme.fonts.importUrl || "";
+  const doc = iframe.contentDocument;
+
+  if (previewReady && doc?.body) {
+    // In-place swap — keeps scroll, no reload.
+    doc.documentElement.lang = state.content.language;
+    doc.documentElement.dir = state.content.direction;
+    doc.body.innerHTML = body;
+    const themeEl = doc.getElementById("pl-theme");
+    if (themeEl) themeEl.textContent = themeCss(state.theme) + " body{overflow-x:hidden}";
+    const fontEl = doc.getElementById("pl-font") as HTMLLinkElement | null;
+    if (fontEl && fontEl.getAttribute("href") !== importUrl) fontEl.setAttribute("href", importUrl);
+    wirePreview(doc);
+    applySelectionOutline();
+    return;
+  }
+
+  // First build.
+  iframe.srcdoc = `<!doctype html><html lang="${state.content.language}" dir="${state.content.direction}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/site.css"><link id="pl-font" rel="stylesheet" href="${esc(importUrl)}">
+<style id="pl-theme">${themeCss(state.theme)} body{overflow-x:hidden}</style></head>
+<body>${body}</body></html>`;
+  iframe.onload = () => {
+    previewReady = true;
+    const d = iframe.contentDocument;
+    if (d) { wirePreview(d); applySelectionOutline(); }
+  };
+}
+
+/** (Re)attach click-to-select + hover affordances + form suppression. */
+function wirePreview(doc: Document): void {
+  doc.querySelectorAll<HTMLElement>("[data-pl-section]").forEach((el) => {
+    el.style.cursor = "pointer";
+    el.addEventListener("click", (e) => {
+      const a = (e.target as HTMLElement).closest("a");
+      if (a) e.preventDefault();
+      selectSection(el.getAttribute("data-pl-section") as SectionKey);
+    });
+    el.addEventListener("mouseenter", () => {
+      if (el.getAttribute("data-pl-section") !== selected) el.style.outline = "2px dashed color-mix(in srgb, var(--site-accent) 60%, transparent)";
+    });
+    el.addEventListener("mouseleave", () => {
+      if (el.getAttribute("data-pl-section") !== selected) el.style.outline = "";
+    });
+  });
+  doc.querySelectorAll("[data-editor-form]").forEach((f) => f.addEventListener("submit", (e) => e.preventDefault()));
+}
+
+/** Draw the selection outline on the EXISTING preview DOM (no rebuild). */
 function applySelectionOutline(): void {
   const doc = previewDoc();
   if (!doc) return;
   doc.querySelectorAll<HTMLElement>("[data-pl-section]").forEach((el) => {
     const on = el.getAttribute("data-pl-section") === selected;
-    el.style.outline = on ? "2px solid var(--site-accent)" : "";
+    el.style.outline = on ? "2.5px solid var(--site-accent)" : "";
     el.style.outlineOffset = on ? "-2px" : "";
   });
 }
@@ -170,6 +197,9 @@ function fieldHtml(field: Field, base: string, value: any): string {
     case "number":
       return I.group(`${field.label} (${value ?? 0})`,
         `<input type="range" data-path="${path}" min="${field.min ?? 0}" max="${field.max ?? 1}" step="${field.step ?? 0.1}" value="${value ?? 0}" class="w-full">`);
+    case "datetime":
+      return I.group(field.label,
+        `<input type="datetime-local" data-path="${path}" value="${esc(value ?? "")}" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">`);
     case "image": {
       const thumb = value
         ? `<img src="${esc(value)}" alt="" class="mb-2 h-24 w-full rounded-md object-cover border border-neutral-200">`
@@ -226,8 +256,14 @@ function colorField(label: string, path: string, current: string): string {
       <input type="text" data-path="${path}" value="${esc(current)}" class="w-24 rounded-md border border-neutral-300 px-2 py-1 text-xs">
     </div>`);
 }
-function group(title: string, inner: string): string {
-  return `<div class="mt-2 rounded-lg bg-neutral-50 p-3"><p class="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-400">${esc(title)}</p>${inner}</div>`;
+/** Collapsible properties group, like a panel section in a design tool. */
+function group(title: string, inner: string, open = false): string {
+  return `<details ${open ? "open" : ""} class="pl-group mb-2 overflow-hidden rounded-lg border border-neutral-200 bg-white">
+    <summary class="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 hover:bg-neutral-50">
+      ${esc(title)}<span class="pl-caret text-neutral-300 transition-transform">▾</span>
+    </summary>
+    <div class="px-3 pb-3">${inner}</div>
+  </details>`;
 }
 
 function designHtml(key: SectionKey): string {
@@ -268,7 +304,8 @@ function designHtml(key: SectionKey): string {
     ? I.group("Button style", selectEl(`${base}.buttonStyle`, d.buttonStyle ?? "solid", [["solid", "Solid"], ["outline", "Outline"], ["pill", "Pill"]]))
     : "";
 
-  return group("Layout & spacing", layout)
+  return `<div class="mt-3 mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Style</div>`
+    + group("Layout & spacing", layout, true)
     + group("Type", type)
     + group("Colour", color)
     + (images ? group("Images", images) : "")
@@ -290,28 +327,51 @@ function emptySection(key: SectionKey): any {
   return base;
 }
 
+const SECTION_ICON: Record<SectionKey, string> = {
+  hero: "◆", eventDetails: "❖", schedule: "🕑", location: "📍",
+  gallery: "🖼", rsvp: "✓", contact: "✉", faq: "?",
+};
+
+/**
+ * Two-level panel (like a design tool):
+ *  - no section selected → the list of sections (cards) to manage/reorder,
+ *  - a section selected → its properties (content + style), with a Back link.
+ * This keeps the controls at the top, so nothing scroll-jumps on select.
+ */
 function sectionsTab(): string {
+  // Properties view for the selected section.
+  if (selected && state.content.sections[selected]) {
+    const schema = SCHEMA_BY_KEY[selected];
+    const data = state.content.sections[selected];
+    const content = schema.fields.map((f) => fieldHtml(f, `content.sections.${selected}`, getByPath(data, f.key))).join("");
+    return `<div id="pl-controls">
+      <button data-action="sec-back" class="mb-3 inline-flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-900">← All sections</button>
+      <div class="mb-4 flex items-center gap-2">
+        <span class="grid h-8 w-8 place-items-center rounded-lg bg-neutral-900 text-sm text-white">${SECTION_ICON[selected]}</span>
+        <span class="text-base font-semibold text-neutral-900">${esc(schema.title)}</span>
+      </div>
+      ${content}${designHtml(selected)}
+    </div>`;
+  }
+
+  // List view.
   const list = orderedKeys().map((key) => {
     const s = state.content.sections[key];
     const exists = !!s;
     const on = exists && s!.enabled !== false;
     const name = SCHEMA_BY_KEY[key]?.title ?? key;
-    return `<div class="flex items-center gap-2 border-b border-neutral-100 py-1.5">
-      <span class="flex flex-col"><button data-action="sec-up" data-key="${key}" class="text-neutral-400 hover:text-neutral-900 leading-none text-xs">▲</button>
-      <button data-action="sec-down" data-key="${key}" class="text-neutral-400 hover:text-neutral-900 leading-none text-xs">▼</button></span>
-      <button data-action="sec-select" data-key="${key}" class="flex-1 text-start text-sm ${selected === key ? "font-semibold text-neutral-900" : "text-neutral-700"} ${exists ? "" : "italic text-neutral-400"}">${esc(name)}</button>
-      <button data-action="sec-toggle" data-key="${key}" class="rounded px-2 py-1 text-xs ${on ? "bg-green-100 text-green-700" : "bg-neutral-100 text-neutral-400"}">${exists ? (on ? "On" : "Off") : "Add"}</button>
+    return `<div class="group flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-2.5 ${on ? "" : "opacity-60"}">
+      <span class="flex flex-col text-neutral-300">
+        <button data-action="sec-up" data-key="${key}" title="Move up" class="leading-none text-[10px] hover:text-neutral-900">▲</button>
+        <button data-action="sec-down" data-key="${key}" title="Move down" class="leading-none text-[10px] hover:text-neutral-900">▼</button>
+      </span>
+      <span class="grid h-8 w-8 place-items-center rounded-lg bg-neutral-100 text-sm text-neutral-600">${SECTION_ICON[key]}</span>
+      <button data-action="sec-select" data-key="${key}" class="flex-1 truncate text-start text-sm font-medium text-neutral-800 ${exists ? "" : "italic text-neutral-400"}">${esc(name)}</button>
+      <button data-action="sec-toggle" data-key="${key}" title="Show / hide" class="rounded-md px-2 py-1 text-[11px] ${on ? "bg-green-100 text-green-700" : "bg-neutral-100 text-neutral-400"}">${exists ? (on ? "On" : "Off") : "Add"}</button>
     </div>`;
   }).join("");
-
-  let editor = `<p class="mt-6 text-center text-sm text-neutral-400">Tap a section above (or in the preview) to edit it.</p>`;
-  if (selected && state.content.sections[selected]) {
-    const schema = SCHEMA_BY_KEY[selected];
-    const data = state.content.sections[selected];
-    const content = schema.fields.map((f) => fieldHtml(f, `content.sections.${selected}`, (data as any)[f.key])).join("");
-    editor = `<div id="pl-controls" style="scroll-margin-top:3.5rem" class="mt-5 border-t border-neutral-200 pt-4"><p class="mb-3 text-sm font-semibold text-neutral-900">${esc(schema.title)}</p>${content}${designHtml(selected)}</div>`;
-  }
-  return `<div class="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">Sections (drag ▲▼ to reorder)</div>${list}${editor}`;
+  return `<p class="mb-3 text-xs text-neutral-400">Click a section to edit it, or click it in the preview. Drag ▲▼ to reorder.</p>
+    <div class="space-y-2">${list}</div>`;
 }
 
 function currentFontName(stack: string): string {
@@ -373,15 +433,30 @@ function settingsTab(): string {
     ${I.group("Credit line", I.input("content.footer.credit", state.content.footer?.credit ?? ""))}`;
 }
 
+const TAB_TITLE: Record<"sections" | "theme" | "settings", string> = {
+  sections: "Sections",
+  theme: "Theme & background",
+  settings: "Settings",
+};
+
 function renderPanel(): void {
   const panel = document.getElementById("pl-panel");
   if (!panel) return;
-  const tabBtn = (id: typeof tab, label: string) =>
-    `<button data-tab="${id}" class="flex-1 rounded-md px-3 py-2 text-sm font-medium ${tab === id ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-100"}">${label}</button>`;
   const body = tab === "sections" ? sectionsTab() : tab === "theme" ? themeTab() : settingsTab();
-  panel.innerHTML = `<div class="sticky top-0 z-10 flex gap-1 border-b border-neutral-200 bg-white p-2">
-    ${tabBtn("sections", "Sections")}${tabBtn("theme", "Theme")}${tabBtn("settings", "Settings")}</div>
+  panel.innerHTML = `<div class="sticky top-0 z-10 border-b border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur">
+      <h2 class="text-sm font-semibold text-neutral-900">${TAB_TITLE[tab]}</h2></div>
     <div class="p-4">${body}</div>`;
+  updateRail();
+}
+
+/** Highlight the active tab in the left icon rail. */
+function updateRail(): void {
+  document.querySelectorAll<HTMLElement>("[data-rail]").forEach((b) => {
+    const on = b.getAttribute("data-rail") === tab;
+    b.classList.toggle("bg-neutral-800", on);
+    b.classList.toggle("text-white", on);
+    b.classList.toggle("text-neutral-400", !on);
+  });
 }
 
 // --- actions ---------------------------------------------------------------
@@ -390,10 +465,10 @@ function selectSection(key: SectionKey): void {
   selected = key;
   tab = "sections";
   renderPanel();
-  // Outline on the LIVE preview DOM — no srcdoc rebuild, so no flash.
+  // Properties render at the TOP of the panel, so just reset the panel scroll.
+  document.getElementById("pl-panel")?.scrollTo({ top: 0 });
+  // Outline on the LIVE preview DOM — no rebuild, so no flash.
   applySelectionOutline();
-  // Smoothly scroll the controls panel to this element's editor.
-  document.getElementById("pl-controls")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 function markDirty(): void {
   dirty = true;
@@ -407,6 +482,12 @@ function handleAction(action: string, el: HTMLElement): void {
   const path = el.getAttribute("data-path");
   if (action === "pick-media" && path) {
     void pickFromLibrary(path);
+    return;
+  }
+  if (action === "sec-back") {
+    selected = null;
+    renderPanel();
+    applySelectionOutline();
     return;
   }
   if (action.startsWith("sec-") && key) {
@@ -452,9 +533,11 @@ function applyFont(which: "heading" | "body", name: string): void {
 }
 
 async function uploadImage(file: File, path: string): Promise<void> {
+  setStatus("Optimizing image…");
+  const { blob, name } = await optimizeImage(file);
   setStatus("Uploading image…");
   const form = new FormData();
-  form.append("file", file);
+  form.append("file", blob, name);
   form.append("slug", state.slug);
   const res = await fetch("/api/upload", { method: "POST", headers: authHeaders(), body: form });
   if (!res.ok) { setStatus("Upload failed: " + (await res.text()), true); return; }
@@ -539,6 +622,12 @@ export async function initStudio(): Promise<void> {
   const view = document.getElementById("pl-view") as HTMLAnchorElement | null;
   if (view) view.href = `/s/${slug}`;
 
+  // Left icon rail → switch tabs.
+  document.querySelectorAll<HTMLElement>("[data-rail]").forEach((b) =>
+    b.addEventListener("click", () => { tab = b.getAttribute("data-rail") as typeof tab; renderPanel(); }),
+  );
+  updateRail();
+
   // Undo / redo (buttons + keyboard).
   document.getElementById("pl-undo")?.addEventListener("click", undo);
   document.getElementById("pl-redo")?.addEventListener("click", redo);
@@ -590,10 +679,11 @@ export async function initStudio(): Promise<void> {
   document.querySelectorAll<HTMLElement>("[data-device]").forEach((b) =>
     b.addEventListener("click", () => {
       const frame = document.getElementById("pl-frame")!;
-      frame.classList.toggle("pl-phone", b.dataset.device === "phone");
-      frame.classList.toggle("pl-desktop", b.dataset.device === "desktop");
-      document.querySelectorAll("[data-device]").forEach((x) => x.classList.remove("ring-2", "ring-white"));
-      b.classList.add("ring-2", "ring-white");
+      const phone = b.dataset.device === "phone";
+      frame.classList.toggle("pl-phone", phone);
+      frame.classList.toggle("pl-desktop", !phone);
+      document.querySelectorAll<HTMLElement>("[data-device]").forEach((x) => x.classList.remove("pl-dev-active"));
+      b.classList.add("pl-dev-active");
     }),
   );
 

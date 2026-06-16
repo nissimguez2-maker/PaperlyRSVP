@@ -13,6 +13,7 @@ export type Field =
   | { kind: "textarea"; key: string; label: string }
   | { kind: "image"; key: string; label: string }
   | { kind: "number"; key: string; label: string; min?: number; max?: number; step?: number }
+  | { kind: "datetime"; key: string; label: string }
   | { kind: "link"; key: string; label: string }
   | { kind: "list"; key: string; label: string; itemLabel: string; item: Field[] };
 
@@ -53,6 +54,10 @@ export const SECTION_SCHEMAS: SectionSchema[] = [
           { kind: "text", key: "value", label: "Value" },
         ],
       },
+      // Add-to-calendar (optional). Set a start to show the buttons.
+      { kind: "datetime", key: "calendar.start", label: "Add-to-calendar: start" },
+      { kind: "datetime", key: "calendar.end", label: "Add-to-calendar: end (optional)" },
+      { kind: "text", key: "calendar.location", label: "Add-to-calendar: location (optional)" },
     ],
   },
   {

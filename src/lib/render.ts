@@ -56,6 +56,46 @@ function multiline(value?: string): string {
   return esc(value).replace(/\n/g, "<br>");
 }
 
+/** "2027-01-01T18:00" → "20270101T180000" (floating local time for calendars). */
+function calStamp(local: string): string {
+  const m = local.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  return m ? `${m[1]}${m[2]}${m[3]}T${m[4]}${m[5]}00` : "";
+}
+
+/** "Add to calendar" buttons (Google + .ics) for the event details section. */
+function calendarButtons(content: SiteContent, data: EventDetailsSection, bodyClass: string): string {
+  const cal = data.calendar;
+  if (!cal?.start) return "";
+  const start = calStamp(cal.start);
+  if (!start) return "";
+  // Default end = start + 3h.
+  let end = cal.end ? calStamp(cal.end) : "";
+  if (!end) {
+    const d = new Date(cal.start);
+    d.setHours(d.getHours() + 3);
+    end = calStamp(d.toISOString().slice(0, 16));
+  }
+  const title = content.meta.title || data.title || "Event";
+  const loc = cal.location || content.sections.location?.venue || content.sections.location?.address || "";
+  const labels = { add: content.language === "he" ? "הוספה ליומן" : "Add to calendar", g: "Google", a: "Apple / Outlook" };
+
+  const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&location=${encodeURIComponent(loc)}`;
+  const ics = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Paperly//RSVP//EN", "BEGIN:VEVENT",
+    `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${title.replace(/\n/g, " ")}`,
+    loc ? `LOCATION:${String(loc).replace(/\n/g, " ")}` : "", "END:VEVENT", "END:VCALENDAR",
+  ].filter(Boolean).join("\r\n");
+  const icsHref = `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}`;
+
+  return `<div class="mt-8">
+    <p class="mb-2 text-xs uppercase tracking-[0.2em] ${bodyClass}">${esc(labels.add)}</p>
+    <div class="flex flex-wrap gap-3">
+      <a href="${gcal}" target="_blank" rel="noopener" class="btn-outline">${esc(labels.g)}</a>
+      <a href="${icsHref}" download="event.ics" class="btn-outline">${esc(labels.a)}</a>
+    </div>
+  </div>`;
+}
+
 /** Colour palette derived from a section's background, so text stays legible. */
 function palette(key: SectionKey, d?: HeroSection["design"]) {
   const bg = resolveDesign(key, d).bg;
@@ -133,7 +173,7 @@ function renderHero(data: HeroSection): string {
 </section>`;
 }
 
-function renderEventDetails(data: EventDetailsSection): string {
+function renderEventDetails(data: EventDetailsSection, content: SiteContent): string {
   const p = palette("eventDetails", data.design);
   const items = (data.items ?? [])
     .map((it) => `
@@ -148,6 +188,7 @@ function renderEventDetails(data: EventDetailsSection): string {
       ${data.title ? `<h2 class="mb-6 font-heading ${p.heading}" style="${titleStyle("eventDetails", data.design)}">${esc(data.title)}</h2>` : ""}
       ${data.body ? `<p class="text-lg leading-relaxed ${p.body}">${multiline(data.body)}</p>` : ""}
       ${items ? `<dl class="mt-9 grid grid-cols-1 gap-6 sm:grid-cols-2" style="${gapStyle("eventDetails", data.design)}">${items}</dl>` : ""}
+      ${calendarButtons(content, data, p.body)}
     </div>`;
   const image = data.image
     ? `<div class="order-first md:order-last"><img src="${esc(data.image)}" alt="${esc(data.title ?? "")}" class="mx-auto w-full max-w-sm rounded-2xl border ${p.line} object-cover shadow-sm" style="${imageStyle("eventDetails", data.design)}"></div>`
@@ -386,7 +427,7 @@ export function renderSection(key: SectionKey, content: SiteContent, ctx: Render
   if (!s || s.enabled === false) return "";
   switch (key) {
     case "hero": return renderHero(s as HeroSection);
-    case "eventDetails": return renderEventDetails(s as EventDetailsSection);
+    case "eventDetails": return renderEventDetails(s as EventDetailsSection, content);
     case "schedule": return renderSchedule(s as ScheduleSection);
     case "location": return renderLocation(s as LocationSection, ctx.labels);
     case "gallery": return renderGallery(s as GallerySection);

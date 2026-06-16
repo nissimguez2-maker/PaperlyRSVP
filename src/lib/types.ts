@@ -148,6 +148,12 @@ export interface EventDetailsSection extends Toggleable {
   items?: DetailItem[];
   /** Optional invitation artwork (e.g. /visuals/invitation.png). */
   image?: string;
+  /**
+   * Optional "Add to calendar". When `start` is set, the section shows Google
+   * Calendar + Apple/Outlook (.ics) buttons. Times are local datetime strings
+   * (e.g. "2027-01-01T18:00"); end defaults to start + 3h.
+   */
+  calendar?: { start?: string; end?: string; location?: string };
 }
 
 export interface ScheduleItem {

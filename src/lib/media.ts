@@ -3,6 +3,7 @@
  * across every site. Loaded by src/pages/admin/media.astro.
  */
 import { esc } from "./render";
+import { optimizeImage } from "./imageopt";
 
 interface MediaItem {
   id: number; key: string; url: string; name: string | null;
@@ -43,9 +44,10 @@ async function refresh(): Promise<void> {
 async function upload(files: FileList): Promise<void> {
   const status = document.getElementById("pl-upload-status")!;
   for (let i = 0; i < files.length; i++) {
-    status.textContent = `Uploading ${i + 1}/${files.length}…`;
+    status.textContent = `Optimizing & uploading ${i + 1}/${files.length}…`;
+    const { blob, name } = await optimizeImage(files[i]);
     const form = new FormData();
-    form.append("file", files[i]);
+    form.append("file", blob, name);
     form.append("slug", "library");
     const res = await fetch("/api/upload", { method: "POST", headers: authHeaders(), body: form });
     if (!res.ok) { status.textContent = "Upload failed."; return; }
