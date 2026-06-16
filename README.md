@@ -14,6 +14,24 @@ celebrations…). One hosted app on Cloudflare:
 Sites live in a **database**, so publishing or pausing is instant — no code, no
 git, no redeploy per change.
 
+### v2 highlights
+- **Richer editor**: 14 responsive design controls per section (side padding,
+  min-height, item gap, max-width, heading tracking/leading, per-section hex
+  accent/text overrides, image rounding/darken, top dividers, hero text anchor,
+  button style) — all mobile-safe.
+- **Whole-page background**: upload one image/pattern behind everything, with a
+  readability scrim and a `transparent` section option so it flows through.
+- **Fluid feel**: soft dividers, continuous backgrounds, and gentle
+  scroll-reveal animations (no rigid stacked blocks).
+- **No-flash editor**: clicking an element highlights it on the live preview and
+  scrolls the controls panel to it (no jump); **undo/redo** (Ctrl/Cmd+Z).
+- **Media library** (`/admin/media`): a reusable bank of every uploaded image,
+  shared across all sites, with a "Library" picker inside the editor.
+- **Richer dashboard**: wide card grid with cover thumbnails, RSVP/message
+  counts, dates, an in-page "New site" form, **Duplicate**, and a per-site
+  **Responses** view (`/admin/responses`).
+- **Multiple RSVP blocks** per site (e.g. wedding + henna), tracked separately.
+
 ---
 
 ## How it works (architecture)

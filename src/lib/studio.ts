@@ -29,6 +29,39 @@ let selected: SectionKey | null = null;
 let tab: "sections" | "theme" | "settings" = "sections";
 let dirty = false;
 
+// --- undo / redo history ---------------------------------------------------
+// Snapshots of {content, theme} as JSON. Debounced so a burst of keystrokes
+// collapses into one step.
+const history: string[] = [];
+let histIdx = -1;
+let histTimer: number | undefined;
+
+function snapshotNow(): void {
+  const snap = JSON.stringify({ content: state.content, theme: state.theme });
+  if (snap === history[histIdx]) return;
+  history.splice(histIdx + 1); // drop any redo branch
+  history.push(snap);
+  if (history.length > 60) history.shift();
+  histIdx = history.length - 1;
+}
+function recordHistory(): void {
+  window.clearTimeout(histTimer);
+  histTimer = window.setTimeout(snapshotNow, 500);
+}
+function restoreSnapshot(): void {
+  const snap = history[histIdx];
+  if (!snap) return;
+  const parsed = JSON.parse(snap);
+  state.content = parsed.content;
+  state.theme = parsed.theme;
+  renderPanel();
+  renderPreviewNow();
+  dirty = true;
+  setStatus("Unsaved changes");
+}
+function undo(): void { if (histIdx > 0) { histIdx--; restoreSnapshot(); } }
+function redo(): void { if (histIdx < history.length - 1) { histIdx++; restoreSnapshot(); } }
+
 // --- auth ------------------------------------------------------------------
 
 function adminPw(): string {
@@ -364,6 +397,7 @@ function selectSection(key: SectionKey): void {
 }
 function markDirty(): void {
   dirty = true;
+  recordHistory();
   const s = document.getElementById("pl-status");
   if (s) { s.textContent = "Unsaved changes"; s.className = "text-xs text-amber-300"; }
 }
@@ -498,11 +532,22 @@ export async function initStudio(): Promise<void> {
   // Load (retry once if the password was wrong/empty).
   if (!(await load(slug))) { if (!(await load(slug))) { setStatus("Authentication failed.", true); return; } }
   setStatus("Ready");
+  snapshotNow(); // seed undo history with the loaded state
   renderPanel();
   renderPreviewNow();
 
   const view = document.getElementById("pl-view") as HTMLAnchorElement | null;
   if (view) view.href = `/s/${slug}`;
+
+  // Undo / redo (buttons + keyboard).
+  document.getElementById("pl-undo")?.addEventListener("click", undo);
+  document.getElementById("pl-redo")?.addEventListener("click", redo);
+  document.addEventListener("keydown", (e) => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod || e.key.toLowerCase() !== "z") return;
+    e.preventDefault();
+    if (e.shiftKey) redo(); else undo();
+  });
 
   const panel = document.getElementById("pl-panel")!;
   panel.addEventListener("input", (e) => {
