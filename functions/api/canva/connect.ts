@@ -11,7 +11,9 @@ import { CANVA_AUTHORIZE_URL, CANVA_SCOPES, randomUrlSafe, pkceChallenge, redire
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const unauth = requireAdmin(request, env);
   if (unauth) return unauth;
-  if (!env.CANVA_CLIENT_ID || !env.CANVA_CLIENT_SECRET) {
+  const clientId = (env.CANVA_CLIENT_ID || "").trim();
+  const clientSecret = (env.CANVA_CLIENT_SECRET || "").trim();
+  if (!clientId || !clientSecret) {
     return json({ error: "Canva is not configured. Set CANVA_CLIENT_ID and CANVA_CLIENT_SECRET in Cloudflare." }, 501);
   }
 
@@ -28,7 +30,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   const url = `${CANVA_AUTHORIZE_URL}?` + new URLSearchParams({
     response_type: "code",
-    client_id: env.CANVA_CLIENT_ID,
+    client_id: clientId,
     redirect_uri: redirect,
     scope: CANVA_SCOPES,
     code_challenge: challenge,

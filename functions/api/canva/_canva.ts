@@ -36,7 +36,7 @@ export async function pkceChallenge(verifier: string): Promise<string> {
   return b64url(new Uint8Array(digest));
 }
 function basicAuth(env: Env): string {
-  return "Basic " + btoa(`${env.CANVA_CLIENT_ID}:${env.CANVA_CLIENT_SECRET}`);
+  return "Basic " + btoa(`${(env.CANVA_CLIENT_ID || "").trim()}:${(env.CANVA_CLIENT_SECRET || "").trim()}`);
 }
 /** The redirect URI — always this origin's /api/canva/callback (must match the
  *  Developer-Portal setting). Derived from the request so any domain works. */
