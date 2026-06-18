@@ -432,15 +432,66 @@ function hotspotsEditor(): string {
         <button data-action="list-del" data-path="${base}.${i}" title="Remove" class="button button--danger-soft button--icon-only button--sm">✕</button>
       </div>
       ${I.group("Opens", I.input(`${base}.${i}.href`, h.href ?? "", "text", "#rsvp or https://…"), "Use #rsvp to jump to your RSVP form, or paste any link (maps, registry…).")}
-      ${I.group("From left (%)", optRange(`${base}.${i}.x`, h.x, 0, 100, 1, 30))}
-      ${I.group("From top (%)", optRange(`${base}.${i}.y`, h.y, 0, 100, 1, 80))}
-      ${I.group("Width (%)", optRange(`${base}.${i}.w`, h.w, 5, 100, 1, 40))}
-      ${I.group("Height (%)", optRange(`${base}.${i}.h`, h.h, 3, 100, 1, 10))}
+      <button data-action="hs-place" data-i="${i}" class="button button--primary button--sm button--full-width mb-3">◇ Draw / place on preview</button>
+      <details class="pl-group overflow-hidden rounded-lg border border-pl-line bg-pl-paper">
+        <summary class="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-pl-ink-2">Fine-tune position<span class="pl-caret text-pl-gold">▾</span></summary>
+        <div class="px-3 pb-3 pt-1">
+          ${I.group("From left (%)", optRange(`${base}.${i}.x`, h.x, 0, 100, 1, 30))}
+          ${I.group("From top (%)", optRange(`${base}.${i}.y`, h.y, 0, 100, 1, 80))}
+          ${I.group("Width (%)", optRange(`${base}.${i}.w`, h.w, 5, 100, 1, 40))}
+          ${I.group("Height (%)", optRange(`${base}.${i}.h`, h.h, 3, 100, 1, 10))}
+        </div>
+      </details>
     </div>`).join("");
   return `<div class="mt-6 mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-pl-muted">Tappable links (over the invitation)</div>
-    <p class="mb-2.5 text-[11px] leading-relaxed text-pl-muted">Place clickable areas over your invitation — e.g. a button drawn in Canva. The dashed boxes show only here in the editor; guests just see a tappable area.</p>
+    <p class="mb-2.5 text-[11px] leading-relaxed text-pl-muted">Add a link, then <b>Draw / place on preview</b> and drag a box over the button in your invitation. Dashed boxes show only here; guests just see a tappable area.</p>
     ${rows || `<p class="rounded-xl border border-dashed border-pl-line bg-pl-wash/30 p-4 text-center text-xs text-pl-muted">No tappable links yet.</p>`}
     <button data-action="list-add" data-path="${base}" class="button button--ghost button--sm button--full-width mt-2">+ Add tappable link</button>`;
+}
+
+/**
+ * Draw-to-place a hotspot: overlay the live preview's invitation with a capture
+ * layer; the operator drags a rectangle, which we convert to %-coordinates and
+ * write to hotspot `index`. Sliders remain for fine-tuning.
+ */
+function startPlace(index: number): void {
+  const doc = previewDoc();
+  const stage = doc?.querySelector("[data-hs-stage]") as HTMLElement | null;
+  if (!doc || !stage) { setStatus("Import the invitation first, then place links.", true); return; }
+  setStatus("Draw a box over the button…");
+
+  const overlay = doc.createElement("div");
+  overlay.style.cssText = "position:absolute;inset:0;z-index:60;cursor:crosshair;background:rgba(33,29,23,0.06);touch-action:none";
+  const rect = doc.createElement("div");
+  rect.style.cssText = "position:absolute;display:none;border:2px solid var(--site-accent);background:color-mix(in srgb,var(--site-accent) 20%,transparent)";
+  overlay.appendChild(rect);
+  stage.appendChild(overlay);
+
+  let sx = 0, sy = 0, drawing = false;
+  const bounds = () => stage.getBoundingClientRect();
+  const at = (e: PointerEvent) => { const b = bounds(); return { x: Math.max(0, Math.min(b.width, e.clientX - b.left)), y: Math.max(0, Math.min(b.height, e.clientY - b.top)), b }; };
+  const onDown = (e: PointerEvent) => { drawing = true; const { x, y } = at(e); sx = x; sy = y; rect.style.display = "block"; rect.style.left = x + "px"; rect.style.top = y + "px"; rect.style.width = "0px"; rect.style.height = "0px"; e.preventDefault(); };
+  const onMove = (e: PointerEvent) => { if (!drawing) return; const { x, y } = at(e); rect.style.left = Math.min(sx, x) + "px"; rect.style.top = Math.min(sy, y) + "px"; rect.style.width = Math.abs(x - sx) + "px"; rect.style.height = Math.abs(y - sy) + "px"; };
+  const cleanup = () => { overlay.removeEventListener("pointerdown", onDown); doc.removeEventListener("pointermove", onMove); doc.removeEventListener("pointerup", onUp); overlay.remove(); };
+  const onUp = (e: PointerEvent) => {
+    if (!drawing) return; drawing = false;
+    const { x, y, b } = at(e);
+    const left = Math.min(sx, x), top = Math.min(sy, y), w = Math.abs(x - sx), h = Math.abs(y - sy);
+    cleanup();
+    if (w < 8 || h < 8) { setStatus("Cancelled (box too small)."); return; }
+    const pct = (v: number, t: number) => Math.round((v / t) * 1000) / 10;
+    const p = `content.sections.pages.hotspots.${index}`;
+    setByPath(state, `${p}.x`, pct(left, b.width));
+    setByPath(state, `${p}.y`, pct(top, b.height));
+    setByPath(state, `${p}.w`, pct(w, b.width));
+    setByPath(state, `${p}.h`, pct(h, b.height));
+    markDirty(); renderPanel(); renderPreviewNow();
+    setStatus("Link placed ✓ — set where it opens.");
+  };
+  overlay.addEventListener("pointerdown", onDown);
+  overlay.addEventListener("click", (e) => e.stopPropagation()); // don't select the section
+  doc.addEventListener("pointermove", onMove);
+  doc.addEventListener("pointerup", onUp);
 }
 
 /**
@@ -976,6 +1027,10 @@ function handleAction(action: string, el: HTMLElement): void {
   }
   if (action === "make-sheet") {
     void makeSheet();
+    return;
+  }
+  if (action === "hs-place") {
+    startPlace(parseInt(el.getAttribute("data-i")!, 10));
     return;
   }
   if (action === "cblock-add") {

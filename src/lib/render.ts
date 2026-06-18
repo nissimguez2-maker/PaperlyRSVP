@@ -304,27 +304,30 @@ function renderPages(data: PagesSection, content: SiteContent, ctx: RenderCtx): 
   const p = palette("pages", data.design);
   const rad = imageStyle("pages", data.design);
   const video = data.video
-    ? `<video class="mx-auto block w-full" style="${rad}" autoplay muted loop playsinline ${data.poster ? `poster="${esc(data.poster)}"` : ""}><source src="${esc(data.video)}" type="video/mp4"></video>`
+    ? `<video class="mx-auto block w-full" style="${rad}" autoplay muted loop playsinline preload="metadata" ${data.poster ? `poster="${esc(data.poster)}"` : ""}><source src="${esc(data.video)}" type="video/mp4"></video>`
     : "";
   const imgs = (data.images ?? [])
     .map((im, i) => `<img src="${esc(im.src)}" alt="${esc(im.alt ?? `Invitation page ${i + 1}`)}" loading="${i === 0 ? "eager" : "lazy"}" class="mx-auto block w-full" style="${rad}">`)
     .join("");
   // Tappable hotspots laid over the invitation (e.g. a button drawn in Canva).
-  // Visible (dashed, labelled) in the editor; invisible but clickable for guests.
-  const hotspots = (data.hotspots ?? []).filter((h) => h && h.href);
-  const hsHtml = hotspots.map((h) => {
+  // In the editor: ALL show as dashed, labelled, placeable boxes (data-hsedit).
+  // For guests: only those with a link render, as real (invisible) <a> elements.
+  const hs = data.hotspots ?? [];
+  const hsHtml = hs.map((h, i) => {
+    if (!ctx.editor && !h?.href) return "";
     const x = typeof h.x === "number" ? h.x : 30;
     const y = typeof h.y === "number" ? h.y : 80;
     const w = typeof h.w === "number" ? h.w : 40;
     const ht = typeof h.h === "number" ? h.h : 10;
-    const tgt = String(h.href).startsWith("#") ? "" : ` target="_blank" rel="noopener"`;
+    const tgt = h.href && !String(h.href).startsWith("#") ? ` target="_blank" rel="noopener"` : "";
     const editorBox = ctx.editor ? `outline:2px dashed var(--site-accent);outline-offset:-2px;background:color-mix(in srgb,var(--site-accent) 14%,transparent);` : "";
-    const tag = ctx.editor ? `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--site-accent);text-align:center;padding:2px">${esc(h.href)}</span>` : "";
-    return `<a href="${esc(h.href)}"${tgt} aria-label="${esc(h.label || h.href)}" class="absolute z-10 block" style="left:${x}%;top:${y}%;width:${w}%;height:${ht}%;${editorBox}">${tag}</a>`;
+    const tag = ctx.editor ? `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--site-accent);text-align:center;padding:2px">${esc(h.href || `Link ${i + 1}`)}</span>` : "";
+    const editAttr = ctx.editor ? ` data-hsedit="${i}"` : "";
+    return `<a href="${esc(h.href || "#")}"${tgt}${editAttr} aria-label="${esc(h.label || h.href || "Link")}" class="absolute z-10 block" style="left:${x}%;top:${y}%;width:${w}%;height:${ht}%;${editorBox}">${tag}</a>`;
   }).join("");
   const media = `${video}${imgs}`;
   const inner = media
-    ? (hotspots.length ? `<div class="relative">${media}${hsHtml}</div>` : media)
+    ? `<div class="relative" data-hs-stage>${media}${hsHtml}</div>`
     : `<p class="py-16 text-center ${p.body}">Upload your invitation PDF, or import from Canva, in the editor.</p>`;
   const dl = data.pdfUrl
     ? `<div class="mt-8 text-center"><a href="${esc(data.pdfUrl)}" target="_blank" rel="noopener" class="btn-outline">${esc(data.downloadLabel || (content.language === "he" ? "להורדת ההזמנה (PDF)" : "Download invitation (PDF)"))}</a></div>`
@@ -699,6 +702,10 @@ if('IntersectionObserver' in window){
   document.querySelectorAll('[data-reveal]').forEach(function(el){ro.observe(el);});
 }else{
   document.querySelectorAll('[data-reveal]').forEach(function(el){el.classList.add('is-revealed');});
+}
+// Respect reduced-motion: don't autoplay the invitation video (show its poster).
+if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){
+  document.querySelectorAll('video[autoplay]').forEach(function(v){try{v.removeAttribute('autoplay');v.pause();}catch(e){}});
 }
 </script>`;
 
