@@ -300,20 +300,32 @@ function renderLocation(data: LocationSection, labels: Dictionary): string {
 </section>`;
 }
 
-function renderPages(data: PagesSection, content: SiteContent): string {
+function renderPages(data: PagesSection, content: SiteContent, ctx: RenderCtx): string {
   const p = palette("pages", data.design);
   const rad = imageStyle("pages", data.design);
   const video = data.video
     ? `<video class="mx-auto block w-full" style="${rad}" autoplay muted loop playsinline ${data.poster ? `poster="${esc(data.poster)}"` : ""}><source src="${esc(data.video)}" type="video/mp4"></video>`
     : "";
-  // Live Canva embed (animations + clickable links) — Canva renders it in-frame.
-  const embedRatio = typeof data.embedRatio === "number" && data.embedRatio > 0 ? data.embedRatio : 141;
-  const embed = data.embed
-    ? `<div class="relative mx-auto w-full overflow-hidden" style="padding-top:${embedRatio}%;${rad}"><iframe src="${esc(data.embed)}" class="absolute inset-0 h-full w-full" style="border:0" allow="fullscreen" allowfullscreen loading="lazy"></iframe></div>`
-    : "";
   const imgs = (data.images ?? [])
     .map((im, i) => `<img src="${esc(im.src)}" alt="${esc(im.alt ?? `Invitation page ${i + 1}`)}" loading="${i === 0 ? "eager" : "lazy"}" class="mx-auto block w-full" style="${rad}">`)
     .join("");
+  // Tappable hotspots laid over the invitation (e.g. a button drawn in Canva).
+  // Visible (dashed, labelled) in the editor; invisible but clickable for guests.
+  const hotspots = (data.hotspots ?? []).filter((h) => h && h.href);
+  const hsHtml = hotspots.map((h) => {
+    const x = typeof h.x === "number" ? h.x : 30;
+    const y = typeof h.y === "number" ? h.y : 80;
+    const w = typeof h.w === "number" ? h.w : 40;
+    const ht = typeof h.h === "number" ? h.h : 10;
+    const tgt = String(h.href).startsWith("#") ? "" : ` target="_blank" rel="noopener"`;
+    const editorBox = ctx.editor ? `outline:2px dashed var(--site-accent);outline-offset:-2px;background:color-mix(in srgb,var(--site-accent) 14%,transparent);` : "";
+    const tag = ctx.editor ? `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--site-accent);text-align:center;padding:2px">${esc(h.href)}</span>` : "";
+    return `<a href="${esc(h.href)}"${tgt} aria-label="${esc(h.label || h.href)}" class="absolute z-10 block" style="left:${x}%;top:${y}%;width:${w}%;height:${ht}%;${editorBox}">${tag}</a>`;
+  }).join("");
+  const media = `${video}${imgs}`;
+  const inner = media
+    ? (hotspots.length ? `<div class="relative">${media}${hsHtml}</div>` : media)
+    : `<p class="py-16 text-center ${p.body}">Upload your invitation PDF, or import from Canva, in the editor.</p>`;
   const dl = data.pdfUrl
     ? `<div class="mt-8 text-center"><a href="${esc(data.pdfUrl)}" target="_blank" rel="noopener" class="btn-outline">${esc(data.downloadLabel || (content.language === "he" ? "להורדת ההזמנה (PDF)" : "Download invitation (PDF)"))}</a></div>`
     : "";
@@ -326,7 +338,7 @@ function renderPages(data: PagesSection, content: SiteContent): string {
   return `${open("pages", data.design)}
   <div class="${containerClass("pages", data.design)}" style="${containerStyle("pages", data.design)}">
     ${header}
-    <div class="space-y-4">${embed}${video}${imgs || ((embed || video) ? "" : `<p class="py-16 text-center ${p.body}">Upload your invitation PDF, or import from Canva, in the editor.</p>`)}</div>
+    <div class="space-y-4">${inner}</div>
     ${dl}
   </div>
 </section>`;
@@ -576,7 +588,7 @@ export function renderSection(key: SectionKey, content: SiteContent, ctx: Render
   const s = content.sections[key];
   if (!s || s.enabled === false) return "";
   switch (key) {
-    case "pages": return renderPages(s as PagesSection, content);
+    case "pages": return renderPages(s as PagesSection, content, ctx);
     case "custom": return renderCustom(s as CustomSection, content);
     case "hero": return renderHero(s as HeroSection);
     case "eventDetails": return renderEventDetails(s as EventDetailsSection, content);

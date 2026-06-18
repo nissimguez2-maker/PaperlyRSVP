@@ -262,13 +262,12 @@ export interface PagesSection extends Toggleable {
   /** Optional poster image shown before the video plays. */
   poster?: string;
   /**
-   * Live Canva embed (Canva → Share → Embed): an iframe that renders the design
-   * in Canva's own viewer, preserving BOTH animations and clickable links.
-   * When set it's the centerpiece (rendered above any video/images).
+   * Tappable areas laid over the invitation (video/images) — e.g. a button the
+   * designer drew in Canva. Positions are percentages of the media box. `href`
+   * may be an in-page anchor ("#rsvp") or an external URL. Invisible to guests
+   * (dashed + labelled in the editor).
    */
-  embed?: string;
-  /** Embed box height as a % of its width (responsive aspect). Default ~141 (portrait). */
-  embedRatio?: number;
+  hotspots?: { x: number; y: number; w: number; h: number; href: string; label?: string }[];
 }
 
 /** Labels for the RSVP form. Any omitted label falls back to the i18n default

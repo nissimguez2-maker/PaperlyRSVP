@@ -409,42 +409,38 @@ function sectionsTab(): string {
   return (selected && state.content.sections[selected]) ? sectionEditor() : outlineView();
 }
 
-/** "From Canva" entry at the top of the Invitation (pages) editor: import
- *  (HD pages / looping video) OR embed (full interactivity: animations + links). */
+/** "From Canva" entry at the top of the Invitation (pages) editor — imports the
+ *  design as HD pages (static) or a looping video (animated). */
 function canvaImportBlock(): string {
-  const data: any = state.content.sections.pages ?? {};
-  const embedFields = `
-    ${I.group("Embed link — keeps animations + links",
-      `<input data-canva-embed type="text" value="${esc(data.embed ?? "")}" placeholder="Paste your Canva design link" class="input w-full">`,
-      "In Canva: Share → More → Embed → copy the link (and turn on ‘Anyone with the link can view’). Paste it here to render the live design with animations and clickable links.")}
-    ${data.embed ? I.group("Embed height (%)", optRange("content.sections.pages.embedRatio", data.embedRatio, 50, 220, 1, 141)) : ""}
-    ${data.embed ? `<button data-action="canva-embed-clear" class="button button--ghost button--sm">Remove embed</button>` : ""}`;
   return `<div class="mb-5 rounded-xl border border-pl-line bg-pl-wash/30 p-3.5">
     <div class="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-pl-muted">From Canva</div>
-    <p class="mb-2.5 text-[11px] leading-relaxed text-pl-muted"><b>Import</b> = HD pages or a looping video. <b>Embed</b> = the live design with animations <i>and</i> clickable links.</p>
+    <p class="mb-2.5 text-[11px] leading-relaxed text-pl-muted">Animated designs import as a looping video; static ones as HD pages. Add tappable links below to make buttons clickable.</p>
     <button data-action="canva-import" class="button button--primary button--sm button--full-width">Import from Canva</button>
-    <div class="my-3 flex items-center gap-2 text-[10px] uppercase tracking-wider text-pl-muted"><span class="h-px flex-1 bg-pl-line"></span>or embed (animations + links)<span class="h-px flex-1 bg-pl-line"></span></div>
-    ${embedFields}
   </div>`;
 }
 
-/** Parse a pasted Canva design link into an embeddable /view?embed iframe src. */
-function setCanvaEmbed(raw: string): void {
-  const v = (raw || "").trim();
-  const sec: any = state.content.sections.pages ?? ((state.content.sections as any).pages = emptySection("pages"));
-  if (!v) { sec.embed = undefined; markDirty(); renderPanel(); renderPreviewNow(); return; }
-  const m = v.match(/canva\.com\/design\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)/);
-  if (m) {
-    sec.embed = `https://www.canva.com/design/${m[1]}/${m[2]}/view?embed`;
-    sec.enabled = true;
-  } else if (/^https?:\/\/.+canva/.test(v)) {
-    sec.embed = v; // already an embed/view URL — trust it
-    sec.enabled = true;
-  } else {
-    setStatus("That doesn't look like a Canva design link.", true);
-    return;
-  }
-  markDirty(); renderPanel(); renderPreviewNow();
+/** Tappable hotspots laid over the imported invitation (video/images). Each is a
+ *  clickable area positioned by % — shown dashed in the editor preview. */
+function hotspotsEditor(): string {
+  const data: any = state.content.sections.pages ?? {};
+  const base = "content.sections.pages.hotspots";
+  const arr: any[] = data.hotspots ?? [];
+  const rows = arr.map((h, i) => `
+    <div class="mb-3 rounded-xl border border-pl-line bg-pl-wash/30 p-3">
+      <div class="mb-2 flex items-center justify-between">
+        <span class="text-[11px] font-semibold uppercase tracking-wide text-pl-muted">Link ${i + 1}</span>
+        <button data-action="list-del" data-path="${base}.${i}" title="Remove" class="button button--danger-soft button--icon-only button--sm">✕</button>
+      </div>
+      ${I.group("Opens", I.input(`${base}.${i}.href`, h.href ?? "", "text", "#rsvp or https://…"), "Use #rsvp to jump to your RSVP form, or paste any link (maps, registry…).")}
+      ${I.group("From left (%)", optRange(`${base}.${i}.x`, h.x, 0, 100, 1, 30))}
+      ${I.group("From top (%)", optRange(`${base}.${i}.y`, h.y, 0, 100, 1, 80))}
+      ${I.group("Width (%)", optRange(`${base}.${i}.w`, h.w, 5, 100, 1, 40))}
+      ${I.group("Height (%)", optRange(`${base}.${i}.h`, h.h, 3, 100, 1, 10))}
+    </div>`).join("");
+  return `<div class="mt-6 mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-pl-muted">Tappable links (over the invitation)</div>
+    <p class="mb-2.5 text-[11px] leading-relaxed text-pl-muted">Place clickable areas over your invitation — e.g. a button drawn in Canva. The dashed boxes show only here in the editor; guests just see a tappable area.</p>
+    ${rows || `<p class="rounded-xl border border-dashed border-pl-line bg-pl-wash/30 p-4 text-center text-xs text-pl-muted">No tappable links yet.</p>`}
+    <button data-action="list-add" data-path="${base}" class="button button--ghost button--sm button--full-width mt-2">+ Add tappable link</button>`;
 }
 
 /**
@@ -600,7 +596,7 @@ function sectionEditor(): string {
       body = customEditor();
     } else {
       body = schema.fields.map((f) => fieldHtml(f, `content.sections.${key}`, getByPath(data, f.key))).join("");
-      if (key === "pages") body = canvaImportBlock() + body;
+      if (key === "pages") body = canvaImportBlock() + body + hotspotsEditor();
       if (key === "rsvp") body += customFieldsEditor() + wordingEditor("rsvp");
       if (key === "contact") body += wordingEditor("contact");
     }
@@ -950,11 +946,6 @@ function handleAction(action: string, el: HTMLElement): void {
     void openCanvaImport();
     return;
   }
-  if (action === "canva-embed-clear") {
-    const sec: any = state.content.sections.pages;
-    if (sec) { sec.embed = undefined; markDirty(); renderPanel(); renderPreviewNow(); }
-    return;
-  }
   if (action === "cblock-add") {
     const kind = el.getAttribute("data-kind") as "text" | "image" | "pdf";
     const sec: any = state.content.sections.custom ?? ((state.content.sections as any).custom = emptySection("custom"));
@@ -1294,8 +1285,6 @@ export async function initStudio(): Promise<void> {
     const t = e.target as HTMLElement;
     // Section switcher (jump to another section) — view-only navigation.
     if (t.getAttribute?.("data-secnav")) { selectSection((t as HTMLSelectElement).value as SectionKey); return; }
-    // Canva embed link → normalise to an embeddable iframe src.
-    if (t.hasAttribute?.("data-canva-embed")) { setCanvaEmbed((t as HTMLInputElement).value); return; }
     const filePath = t.getAttribute?.("data-file");
     if (filePath) {
       const file = (t as HTMLInputElement).files?.[0];
