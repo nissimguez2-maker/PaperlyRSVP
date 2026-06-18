@@ -209,6 +209,16 @@ export async function ensureSchema(env: Env): Promise<void> {
       )`,
     ),
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_contact_site ON contact_messages (site_id, created_at)`),
+    env.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS canva_tokens (
+        id INTEGER PRIMARY KEY,
+        access_token TEXT NOT NULL,
+        refresh_token TEXT NOT NULL,
+        expires_at INTEGER NOT NULL,
+        scope TEXT,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+    ),
   ]);
 
   // One-time, idempotent migrations for columns added after a DB was created

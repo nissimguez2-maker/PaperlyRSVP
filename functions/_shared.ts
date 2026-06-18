@@ -20,6 +20,10 @@ export interface Env {
   PUBLIC_TURNSTILE_SITE_KEY?: string;
   /** Password for the dashboard, admin APIs and CSV export (HTTP Basic Auth). */
   ADMIN_PASSWORD?: string;
+  /** Canva Connect integration credentials (Developer Portal). Client ID is
+   *  public; the secret must be a Cloudflare secret, never committed. */
+  CANVA_CLIENT_ID?: string;
+  CANVA_CLIENT_SECRET?: string;
 }
 
 /** JSON response helper. */

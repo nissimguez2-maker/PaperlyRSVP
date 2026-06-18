@@ -253,6 +253,14 @@ export interface PagesSection extends Toggleable {
   pdfUrl?: string;
   /** Override the "Download invitation (PDF)" button text. */
   downloadLabel?: string;
+  /**
+   * Animated invitation: an MP4 (e.g. exported from an animated Canva design),
+   * shown full-width as an auto-playing, muted, looping video above any page
+   * images.
+   */
+  video?: string;
+  /** Optional poster image shown before the video plays. */
+  poster?: string;
 }
 
 /** Labels for the RSVP form. Any omitted label falls back to the i18n default

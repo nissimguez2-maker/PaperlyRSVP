@@ -409,6 +409,111 @@ function sectionsTab(): string {
   return (selected && state.content.sections[selected]) ? sectionEditor() : outlineView();
 }
 
+/** "Import from Canva" entry shown at the top of the Invitation (pages) editor. */
+function canvaImportBlock(): string {
+  return `<div class="mb-5 rounded-xl border border-pl-line bg-pl-wash/30 p-3.5">
+    <div class="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-pl-muted">From Canva</div>
+    <p class="mb-2.5 text-[11px] leading-relaxed text-pl-muted">Pull your invitation straight from Canva — animated designs import as video, static ones as HD pages.</p>
+    <button data-action="canva-import" class="button button--primary button--sm button--full-width">Import from Canva</button>
+  </div>`;
+}
+
+/**
+ * Modal: connect Canva (once), list the user's designs, export the picked one
+ * and drop it into the Invitation section — as a looping video when the design
+ * is animated, or as HD page images when it's static.
+ */
+async function openCanvaImport(): Promise<void> {
+  const overlay = document.createElement("div");
+  overlay.className = "fixed inset-0 z-[70] flex items-center justify-center bg-pl-ink/55 p-4 backdrop-blur-sm";
+  overlay.innerHTML = `<div class="card flex max-h-[82vh] w-full max-w-3xl flex-col p-5">
+    <div class="mb-3 flex items-center justify-between"><h3 class="font-pl-display text-lg font-semibold text-pl-ink">Import from Canva</h3>
+      <button data-close class="button button--ghost button--sm">Close</button></div>
+    <p data-cv-status class="mb-2 min-h-[1rem] text-xs text-pl-ink-2"></p>
+    <div data-cv-body class="min-h-[8rem] flex-1 overflow-y-auto"><p class="text-sm text-pl-muted">Loading…</p></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.addEventListener("click", (e) => { if (e.target === overlay || (e.target as HTMLElement).hasAttribute("data-close")) close(); });
+  const bodyEl = overlay.querySelector("[data-cv-body]") as HTMLElement;
+  const statusEl = overlay.querySelector("[data-cv-status]") as HTMLElement;
+  const setS = (m: string) => { statusEl.textContent = m; };
+  const auth = (extra: Record<string, string> = {}) => ({ ...authHeaders(), ...extra });
+
+  // 1) Is Canva configured / connected?
+  let st: any;
+  try { st = await (await fetch("/api/canva/status", { headers: auth() })).json(); }
+  catch { bodyEl.innerHTML = `<p class="text-sm text-red-600">Couldn't reach Canva.</p>`; return; }
+  if (!st.configured) {
+    bodyEl.innerHTML = `<p class="text-sm text-pl-ink-2">Canva isn't set up yet. Add <code>CANVA_CLIENT_ID</code> and <code>CANVA_CLIENT_SECRET</code> in Cloudflare, then reload.</p>`;
+    return;
+  }
+  if (!st.connected) {
+    bodyEl.innerHTML = `<div class="py-8 text-center">
+      <p class="mb-4 text-sm text-pl-ink-2">Connect your Canva account once to import designs.</p>
+      <button data-cv-connect class="button button--primary">Connect Canva</button></div>`;
+    bodyEl.querySelector("[data-cv-connect]")?.addEventListener("click", async () => {
+      setS("Opening Canva…");
+      try {
+        const res = await fetch("/api/canva/connect", { method: "POST", headers: auth({ "Content-Type": "application/json" }), body: JSON.stringify({ return: location.pathname + location.search }) });
+        const j = await res.json();
+        if (j.url) location.href = j.url; else setS(j.error || "Couldn't start the Canva connection.");
+      } catch { setS("Couldn't start the Canva connection."); }
+    });
+    return;
+  }
+
+  // 2) List designs.
+  setS("Loading your Canva designs…");
+  let data: any;
+  try { data = await (await fetch("/api/canva/designs", { headers: auth() })).json(); }
+  catch { bodyEl.innerHTML = `<p class="text-sm text-red-600">Couldn't load your designs.</p>`; return; }
+  if (data.error) { setS(""); bodyEl.innerHTML = `<p class="text-sm text-red-600">${esc(data.error)}</p>`; return; }
+  setS("");
+  const items: any[] = data.items ?? [];
+  if (!items.length) { bodyEl.innerHTML = `<p class="text-sm text-pl-muted">No designs found in your Canva account.</p>`; return; }
+  bodyEl.innerHTML = `<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">${items.map((d) =>
+    `<button data-cv-pick="${esc(d.id)}" class="group overflow-hidden rounded-lg border border-pl-line text-start transition hover:ring-2 hover:ring-pl-gold">
+      ${d.thumbnail ? `<img src="${esc(d.thumbnail)}" alt="" class="aspect-square w-full object-cover">` : `<div class="aspect-square w-full bg-pl-wash"></div>`}
+      <span class="block truncate px-2 py-1.5 text-[11px] text-pl-ink-2">${esc(d.title)}</span>
+    </button>`).join("")}</div>`;
+
+  // 3) Pick → export → poll → save → apply.
+  bodyEl.addEventListener("click", async (e) => {
+    const pick = (e.target as HTMLElement).closest<HTMLElement>("[data-cv-pick]");
+    if (!pick) return;
+    const designId = pick.dataset.cvPick!;
+    bodyEl.style.opacity = "0.5"; bodyEl.style.pointerEvents = "none";
+    try {
+      setS("Exporting from Canva…");
+      const ex = await (await fetch("/api/canva/export", { method: "POST", headers: auth({ "Content-Type": "application/json" }), body: JSON.stringify({ designId }) })).json();
+      if (ex.error || !ex.jobId) throw new Error(ex.error || "Export couldn't start.");
+      const kind = ex.kind as string;
+      let urls: string[] | null = null;
+      for (let i = 0; i < 80; i++) {
+        await new Promise((r) => setTimeout(r, 1500));
+        const poll = await (await fetch(`/api/canva/export?jobId=${encodeURIComponent(ex.jobId)}`, { headers: auth() })).json();
+        if (poll.status === "success") { urls = poll.urls; break; }
+        if (poll.status === "failed" || poll.error) throw new Error("Canva couldn't export that design.");
+        setS(`Rendering in Canva… (${i + 1})`);
+      }
+      if (!urls || !urls.length) throw new Error("Timed out waiting for Canva.");
+      setS("Saving to your site…");
+      const saved = await (await fetch("/api/canva/save", { method: "POST", headers: auth({ "Content-Type": "application/json" }), body: JSON.stringify({ slug: state.slug, urls, kind }) })).json();
+      if (saved.error || !saved.urls?.length) throw new Error(saved.error || "Couldn't save the import.");
+      const sec: any = state.content.sections.pages ?? ((state.content.sections as any).pages = emptySection("pages"));
+      sec.enabled = true;
+      if (kind === "video") { sec.video = saved.urls[0]; }
+      else { sec.images = saved.urls.map((u: string) => ({ src: u })); sec.video = undefined; }
+      markDirty(); selected = "pages"; tab = "content"; renderPanel(); renderPreviewNow();
+      close();
+    } catch (err) {
+      bodyEl.style.opacity = ""; bodyEl.style.pointerEvents = "";
+      setS(err instanceof Error ? err.message : String(err));
+    }
+  });
+}
+
 /** The grouped page outline. Rows are draggable to reorder the page. */
 function outlineView(): string {
   const order = orderedKeys();
@@ -466,6 +571,7 @@ function sectionEditor(): string {
       body = customEditor();
     } else {
       body = schema.fields.map((f) => fieldHtml(f, `content.sections.${key}`, getByPath(data, f.key))).join("");
+      if (key === "pages") body = canvaImportBlock() + body;
       if (key === "rsvp") body += customFieldsEditor() + wordingEditor("rsvp");
       if (key === "contact") body += wordingEditor("contact");
     }
@@ -811,6 +917,10 @@ function handleAction(action: string, el: HTMLElement): void {
     void pickFromLibrary(path);
     return;
   }
+  if (action === "canva-import") {
+    void openCanvaImport();
+    return;
+  }
   if (action === "cblock-add") {
     const kind = el.getAttribute("data-kind") as "text" | "image" | "pdf";
     const sec: any = state.content.sections.custom ?? ((state.content.sections as any).custom = emptySection("custom"));
@@ -1099,6 +1209,11 @@ export async function initStudio(): Promise<void> {
   snapshotNow(); // seed undo history with the loaded state
   renderPanel();
   renderPreviewNow();
+
+  // Returning from the Canva OAuth flow → surface the result.
+  const canvaParam = new URLSearchParams(location.search).get("canva");
+  if (canvaParam === "connected") setStatus("Canva connected ✓");
+  else if (canvaParam === "error") setStatus("Canva connection failed — try again.", true);
 
   const view = document.getElementById("pl-view") as HTMLAnchorElement | null;
   if (view) view.href = `/s/${slug}`;

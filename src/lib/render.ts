@@ -303,6 +303,9 @@ function renderLocation(data: LocationSection, labels: Dictionary): string {
 function renderPages(data: PagesSection, content: SiteContent): string {
   const p = palette("pages", data.design);
   const rad = imageStyle("pages", data.design);
+  const video = data.video
+    ? `<video class="mx-auto block w-full" style="${rad}" autoplay muted loop playsinline ${data.poster ? `poster="${esc(data.poster)}"` : ""}><source src="${esc(data.video)}" type="video/mp4"></video>`
+    : "";
   const imgs = (data.images ?? [])
     .map((im, i) => `<img src="${esc(im.src)}" alt="${esc(im.alt ?? `Invitation page ${i + 1}`)}" loading="${i === 0 ? "eager" : "lazy"}" class="mx-auto block w-full" style="${rad}">`)
     .join("");
@@ -318,7 +321,7 @@ function renderPages(data: PagesSection, content: SiteContent): string {
   return `${open("pages", data.design)}
   <div class="${containerClass("pages", data.design)}" style="${containerStyle("pages", data.design)}">
     ${header}
-    <div class="space-y-4">${imgs || `<p class="py-16 text-center ${p.body}">Upload your invitation PDF in the editor.</p>`}</div>
+    <div class="space-y-4">${video}${imgs || (video ? "" : `<p class="py-16 text-center ${p.body}">Upload your invitation PDF, or import from Canva, in the editor.</p>`)}</div>
     ${dl}
   </div>
 </section>`;
