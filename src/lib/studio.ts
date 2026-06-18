@@ -409,13 +409,42 @@ function sectionsTab(): string {
   return (selected && state.content.sections[selected]) ? sectionEditor() : outlineView();
 }
 
-/** "Import from Canva" entry shown at the top of the Invitation (pages) editor. */
+/** "From Canva" entry at the top of the Invitation (pages) editor: import
+ *  (HD pages / looping video) OR embed (full interactivity: animations + links). */
 function canvaImportBlock(): string {
+  const data: any = state.content.sections.pages ?? {};
+  const embedFields = `
+    ${I.group("Embed link — keeps animations + links",
+      `<input data-canva-embed type="text" value="${esc(data.embed ?? "")}" placeholder="Paste your Canva design link" class="input w-full">`,
+      "In Canva: Share → More → Embed → copy the link (and turn on ‘Anyone with the link can view’). Paste it here to render the live design with animations and clickable links.")}
+    ${data.embed ? I.group("Embed height (%)", optRange("content.sections.pages.embedRatio", data.embedRatio, 50, 220, 1, 141)) : ""}
+    ${data.embed ? `<button data-action="canva-embed-clear" class="button button--ghost button--sm">Remove embed</button>` : ""}`;
   return `<div class="mb-5 rounded-xl border border-pl-line bg-pl-wash/30 p-3.5">
     <div class="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-pl-muted">From Canva</div>
-    <p class="mb-2.5 text-[11px] leading-relaxed text-pl-muted">Pull your invitation straight from Canva — animated designs import as video, static ones as HD pages.</p>
+    <p class="mb-2.5 text-[11px] leading-relaxed text-pl-muted"><b>Import</b> = HD pages or a looping video. <b>Embed</b> = the live design with animations <i>and</i> clickable links.</p>
     <button data-action="canva-import" class="button button--primary button--sm button--full-width">Import from Canva</button>
+    <div class="my-3 flex items-center gap-2 text-[10px] uppercase tracking-wider text-pl-muted"><span class="h-px flex-1 bg-pl-line"></span>or embed (animations + links)<span class="h-px flex-1 bg-pl-line"></span></div>
+    ${embedFields}
   </div>`;
+}
+
+/** Parse a pasted Canva design link into an embeddable /view?embed iframe src. */
+function setCanvaEmbed(raw: string): void {
+  const v = (raw || "").trim();
+  const sec: any = state.content.sections.pages ?? ((state.content.sections as any).pages = emptySection("pages"));
+  if (!v) { sec.embed = undefined; markDirty(); renderPanel(); renderPreviewNow(); return; }
+  const m = v.match(/canva\.com\/design\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)/);
+  if (m) {
+    sec.embed = `https://www.canva.com/design/${m[1]}/${m[2]}/view?embed`;
+    sec.enabled = true;
+  } else if (/^https?:\/\/.+canva/.test(v)) {
+    sec.embed = v; // already an embed/view URL — trust it
+    sec.enabled = true;
+  } else {
+    setStatus("That doesn't look like a Canva design link.", true);
+    return;
+  }
+  markDirty(); renderPanel(); renderPreviewNow();
 }
 
 /**
@@ -921,6 +950,11 @@ function handleAction(action: string, el: HTMLElement): void {
     void openCanvaImport();
     return;
   }
+  if (action === "canva-embed-clear") {
+    const sec: any = state.content.sections.pages;
+    if (sec) { sec.embed = undefined; markDirty(); renderPanel(); renderPreviewNow(); }
+    return;
+  }
   if (action === "cblock-add") {
     const kind = el.getAttribute("data-kind") as "text" | "image" | "pdf";
     const sec: any = state.content.sections.custom ?? ((state.content.sections as any).custom = emptySection("custom"));
@@ -1260,6 +1294,8 @@ export async function initStudio(): Promise<void> {
     const t = e.target as HTMLElement;
     // Section switcher (jump to another section) — view-only navigation.
     if (t.getAttribute?.("data-secnav")) { selectSection((t as HTMLSelectElement).value as SectionKey); return; }
+    // Canva embed link → normalise to an embeddable iframe src.
+    if (t.hasAttribute?.("data-canva-embed")) { setCanvaEmbed((t as HTMLInputElement).value); return; }
     const filePath = t.getAttribute?.("data-file");
     if (filePath) {
       const file = (t as HTMLInputElement).files?.[0];

@@ -306,6 +306,11 @@ function renderPages(data: PagesSection, content: SiteContent): string {
   const video = data.video
     ? `<video class="mx-auto block w-full" style="${rad}" autoplay muted loop playsinline ${data.poster ? `poster="${esc(data.poster)}"` : ""}><source src="${esc(data.video)}" type="video/mp4"></video>`
     : "";
+  // Live Canva embed (animations + clickable links) — Canva renders it in-frame.
+  const embedRatio = typeof data.embedRatio === "number" && data.embedRatio > 0 ? data.embedRatio : 141;
+  const embed = data.embed
+    ? `<div class="relative mx-auto w-full overflow-hidden" style="padding-top:${embedRatio}%;${rad}"><iframe src="${esc(data.embed)}" class="absolute inset-0 h-full w-full" style="border:0" allow="fullscreen" allowfullscreen loading="lazy"></iframe></div>`
+    : "";
   const imgs = (data.images ?? [])
     .map((im, i) => `<img src="${esc(im.src)}" alt="${esc(im.alt ?? `Invitation page ${i + 1}`)}" loading="${i === 0 ? "eager" : "lazy"}" class="mx-auto block w-full" style="${rad}">`)
     .join("");
@@ -321,7 +326,7 @@ function renderPages(data: PagesSection, content: SiteContent): string {
   return `${open("pages", data.design)}
   <div class="${containerClass("pages", data.design)}" style="${containerStyle("pages", data.design)}">
     ${header}
-    <div class="space-y-4">${video}${imgs || (video ? "" : `<p class="py-16 text-center ${p.body}">Upload your invitation PDF, or import from Canva, in the editor.</p>`)}</div>
+    <div class="space-y-4">${embed}${video}${imgs || ((embed || video) ? "" : `<p class="py-16 text-center ${p.body}">Upload your invitation PDF, or import from Canva, in the editor.</p>`)}</div>
     ${dl}
   </div>
 </section>`;
