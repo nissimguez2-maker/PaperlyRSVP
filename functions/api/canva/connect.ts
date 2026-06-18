@@ -34,7 +34,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     redirect_uri: redirect,
     scope: CANVA_SCOPES,
     code_challenge: challenge,
-    code_challenge_method: "S256",
+    code_challenge_method: "s256", // Canva uses lowercase (matches its portal-generated URL)
     state,
   }).toString();
 
