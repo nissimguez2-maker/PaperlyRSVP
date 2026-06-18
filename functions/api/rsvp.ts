@@ -7,9 +7,11 @@
  * With no events, a single row is stored.
  */
 import { type Env, verifyTurnstile, field, seeOther } from "../_shared";
-import { ensureSchema } from "../_sites";
+import { ensureSchema, getSiteBySlug } from "../_sites";
+import { gsConfigured, appendRsvpRecords } from "../_gsheets";
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: PagesFunction<Env> = async (ctx) => {
+  const { request, env } = ctx;
   await ensureSchema(env);
   const form = await request.formData();
 
@@ -52,21 +54,46 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   const eventIds = (field(form, "event_ids") || "").split(",").map((s) => s.trim()).filter(Boolean);
 
+  // Build a parallel "record" per row for the Google Sheet mirror (keyed by the
+  // human column labels the Sheet uses).
+  const records: Record<string, unknown>[] = [];
   const stmts: D1PreparedStatement[] = [];
+  const addRow = (attending: string, guests: number, blockId: string | null, eventLabel: string | null) => {
+    stmts.push(insert(attending, guests, blockId, eventLabel));
+    records.push({
+      Submitted: new Date().toISOString().replace("T", " ").slice(0, 16),
+      Event: eventLabel ?? "", Name: fullName, Email: email ?? "", Phone: phone ?? "",
+      Attending: attending, Guests: guests, "Guest names": guestNames ?? "",
+      Dietary: dietary ?? "", Message: message ?? "", ...extraObj,
+    });
+  };
+
   if (eventIds.length) {
     for (const id of eventIds) {
       const att = field(form, `att_${id}`);
       if (att !== "yes" && att !== "no") continue; // unanswered event → skip
       const label = field(form, `eventlabel_${id}`) ?? id;
-      stmts.push(insert(att, guestsOf(field(form, `guests_${id}`)), id, label));
+      addRow(att, guestsOf(field(form, `guests_${id}`)), id, label);
     }
     if (!stmts.length) return seeOther("/?error=missing#rsvp", request);
   } else {
     const attending = field(form, "attending");
     if (attending !== "yes" && attending !== "no") return seeOther("/?error=missing#rsvp", request);
-    stmts.push(insert(attending, guestsOf(field(form, "guests")), null, null));
+    addRow(attending, guestsOf(field(form, "guests")), null, null);
   }
 
   await env.DB.batch(stmts);
+
+  // Mirror to the client's Google Sheet (best-effort, never blocks the guest).
+  if (gsConfigured(env)) {
+    ctx.waitUntil((async () => {
+      try {
+        const site = await getSiteBySlug(env, siteId);
+        const sheetId = (site as any)?.sheet_id as string | undefined;
+        if (sheetId) await appendRsvpRecords(env, sheetId, records);
+      } catch { /* D1 remains source of truth; backfill via export if needed */ }
+    })());
+  }
+
   return seeOther(`/thank-you?type=rsvp&lang=${language ?? "en"}`, request);
 };

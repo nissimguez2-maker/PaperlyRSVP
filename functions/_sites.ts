@@ -228,6 +228,9 @@ export async function ensureSchema(env: Env): Promise<void> {
     if (!(siteCols.results ?? []).some((c) => c.name === "cover")) {
       await env.DB.prepare("ALTER TABLE sites ADD COLUMN cover TEXT").run();
     }
+    if (!(siteCols.results ?? []).some((c) => c.name === "sheet_id")) {
+      await env.DB.prepare("ALTER TABLE sites ADD COLUMN sheet_id TEXT").run();
+    }
     const rsvpCols = await env.DB.prepare("PRAGMA table_info(rsvps)").all<{ name: string }>();
     if (!(rsvpCols.results ?? []).some((c) => c.name === "extra")) {
       await env.DB.prepare("ALTER TABLE rsvps ADD COLUMN extra TEXT").run();

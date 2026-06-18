@@ -851,6 +851,27 @@ function themeTab(): string {
     ${I.group("Image fit", selectEl("content.background.size", bgv.size ?? "cover", [["cover", "Cover"], ["contain", "Contain"], ["repeat", "Tile"]]))}`;
 }
 
+/** Create + share the per-site RSVP Google Sheet, then store its URL on the site. */
+async function makeSheet(): Promise<void> {
+  setStatus("Creating Google Sheet…");
+  try {
+    const email = ((state.content.meta as any).clientEmail as string) || "";
+    const res = await fetch("/api/sheet", {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ slug: state.slug, email }),
+    });
+    const j = await res.json();
+    if (!res.ok || j.error) { setStatus(j.error || "Couldn't create the sheet.", true); return; }
+    setByPath(state, "content.meta.sheetUrl", j.url);
+    markDirty();
+    renderPanel();
+    await save(); // persist the sheet URL
+  } catch (e) {
+    setStatus(e instanceof Error ? e.message : String(e), true);
+  }
+}
+
 function settingsTab(): string {
   const m = state.content.meta;
   const navRows = (state.content.nav ?? []).map((n, i) => `<div class="mb-3 rounded-xl border border-pl-line bg-pl-paper p-3">
@@ -870,7 +891,14 @@ function settingsTab(): string {
     <button data-action="list-add" data-path="content.nav" class="w-full rounded-lg border border-dashed border-pl-line py-2 text-xs font-medium text-pl-ink-2 transition-colors hover:border-pl-gold hover:bg-pl-wash/40 hover:text-pl-gold">+ Add menu item</button>
     <div class="mb-3 mt-6 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-pl-gold"><span>Footer</span><span class="h-px flex-1 bg-pl-line"></span></div>
     ${I.group("Footer message", I.input("content.footer.message", state.content.footer?.message ?? ""))}
-    ${I.group("Credit line", I.input("content.footer.credit", state.content.footer?.credit ?? ""))}`;
+    ${I.group("Credit line", I.input("content.footer.credit", state.content.footer?.credit ?? ""))}
+    <div class="mb-3 mt-6 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-pl-gold"><span>Guest list → Google Sheet</span><span class="h-px flex-1 bg-pl-line"></span></div>
+    <p class="-mt-1 mb-3 text-[11px] leading-relaxed text-pl-muted">Create a live Google Sheet of RSVPs and share it with your client. New responses append automatically.</p>
+    ${I.group("Client email (to share the sheet)", I.input("content.meta.clientEmail", m.clientEmail ?? "", "text", "client@example.com"))}
+    ${m.sheetUrl
+      ? `<a href="${esc(m.sheetUrl)}" target="_blank" rel="noopener" class="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-pl-gold hover:underline">Open guest-list sheet ↗</a>
+         <button data-action="make-sheet" class="button button--ghost button--sm button--full-width">Re-share with client email</button>`
+      : `<button data-action="make-sheet" class="button button--primary button--sm button--full-width">Create &amp; share Google Sheet</button>`}`;
 }
 
 const TAB_TITLE: Record<"content" | "brand" | "settings", string> = {
@@ -944,6 +972,10 @@ function handleAction(action: string, el: HTMLElement): void {
   }
   if (action === "canva-import") {
     void openCanvaImport();
+    return;
+  }
+  if (action === "make-sheet") {
+    void makeSheet();
     return;
   }
   if (action === "cblock-add") {

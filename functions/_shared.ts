@@ -24,6 +24,12 @@ export interface Env {
    *  public; the secret must be a Cloudflare secret, never committed. */
   CANVA_CLIENT_ID?: string;
   CANVA_CLIENT_SECRET?: string;
+  /** Google service account for the per-site RSVP → Google Sheet mirror.
+   *  GS_SA_KEY is the PKCS8 private key (a Cloudflare secret); GS_SHARED_DRIVE_ID
+   *  is a Shared Drive the service account belongs to (so it can own files). */
+  GS_SA_EMAIL?: string;
+  GS_SA_KEY?: string;
+  GS_SHARED_DRIVE_ID?: string;
 }
 
 /** JSON response helper. */

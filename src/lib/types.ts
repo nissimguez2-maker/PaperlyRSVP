@@ -375,6 +375,10 @@ export interface SiteMeta {
   description?: string;
   /** Optional favicon path under /visuals/... */
   favicon?: string;
+  /** Client's email — used to share the per-site RSVP Google Sheet with them. */
+  clientEmail?: string;
+  /** URL of the per-site RSVP Google Sheet, once created (shown in the editor). */
+  sheetUrl?: string;
 }
 
 export interface SiteContent {
