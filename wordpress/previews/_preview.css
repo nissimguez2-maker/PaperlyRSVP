@@ -1,0 +1,190 @@
+/*
+ * Standalone preview stylesheet — mirrors theme.json + extra.css so the static
+ * previews look like the real WordPress output. The base (:root) values are the
+ * "Classic & elegant" style; .style-modern / .style-romantic override the
+ * palette + fonts exactly like the matching style variations.
+ */
+
+:root {
+	/* Palette — Classic & elegant (base) */
+	--wp--preset--color--base: #FBF8F1;
+	--wp--preset--color--surface: #F3ECDF;
+	--wp--preset--color--contrast: #2E2A24;
+	--wp--preset--color--muted: #8A7E6A;
+	--wp--preset--color--primary: #B08D57;
+	--wp--preset--color--accent: #9AA67E;
+	--wp--preset--color--line: #E4DAC8;
+
+	/* Fonts */
+	--wp--preset--font-family--cormorant: "Cormorant Garamond", "Times New Roman", serif;
+	--wp--preset--font-family--eb-garamond: "EB Garamond", Georgia, serif;
+	--wp--preset--font-family--great-vibes: "Great Vibes", cursive;
+	--wp--preset--font-family--tenor-sans: "Tenor Sans", "Helvetica Neue", sans-serif;
+	--wp--preset--font-family--inter: "Inter", "Helvetica Neue", Arial, sans-serif;
+	--wp--preset--font-family--jost: "Jost", "Helvetica Neue", Arial, sans-serif;
+	--wp--preset--font-family--pinyon-script: "Pinyon Script", cursive;
+	--wp--preset--font-family--mulish: "Mulish", "Helvetica Neue", Arial, sans-serif;
+
+	/* Spacing */
+	--wp--preset--spacing--20: 0.75rem;
+	--wp--preset--spacing--30: 1.25rem;
+	--wp--preset--spacing--40: 2rem;
+	--wp--preset--spacing--50: 3rem;
+	--wp--preset--spacing--60: clamp(3.5rem, 8vw, 6rem);
+	--wp--preset--spacing--70: clamp(5rem, 12vw, 9rem);
+
+	/* Per-style knobs (overridden below) */
+	--paperly-body-font: var(--wp--preset--font-family--jost);
+	--paperly-body-weight: 400;
+	--paperly-body-leading: 1.75;
+	--paperly-heading-font: var(--wp--preset--font-family--cormorant);
+	--paperly-heading-weight: 500;
+	--paperly-button-radius: 999px;
+	--paperly-content: 720px;
+}
+
+.style-modern {
+	--wp--preset--color--base: #FFFFFF;
+	--wp--preset--color--surface: #F5F5F2;
+	--wp--preset--color--contrast: #141414;
+	--wp--preset--color--muted: #8C8C86;
+	--wp--preset--color--primary: #141414;
+	--wp--preset--color--accent: #B7B2A6;
+	--wp--preset--color--line: #E6E6E1;
+	--paperly-body-font: var(--wp--preset--font-family--inter);
+	--paperly-body-weight: 300;
+	--paperly-body-leading: 1.8;
+	--paperly-heading-font: var(--wp--preset--font-family--tenor-sans);
+	--paperly-heading-weight: 400;
+	--paperly-button-radius: 0px;
+}
+
+.style-romantic {
+	--wp--preset--color--base: #FDF7F4;
+	--wp--preset--color--surface: #F7E8E3;
+	--wp--preset--color--contrast: #4A3B3B;
+	--wp--preset--color--muted: #A98C8C;
+	--wp--preset--color--primary: #C98B8B;
+	--wp--preset--color--accent: #9DAE8B;
+	--wp--preset--color--line: #EBD7D0;
+	--paperly-body-font: var(--wp--preset--font-family--mulish);
+	--paperly-body-weight: 300;
+	--paperly-body-leading: 1.85;
+	--paperly-heading-font: var(--wp--preset--font-family--cormorant);
+	--paperly-heading-weight: 500;
+	--paperly-button-radius: 999px;
+}
+
+/* --- Base elements ------------------------------------------------------- */
+* { box-sizing: border-box; }
+body {
+	margin: 0;
+	background: var(--wp--preset--color--base);
+	color: var(--wp--preset--color--contrast);
+	font-family: var(--paperly-body-font);
+	font-weight: var(--paperly-body-weight);
+	font-size: 1.0625rem;
+	line-height: var(--paperly-body-leading);
+	letter-spacing: 0.008em;
+	-webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, .wp-block-heading {
+	font-family: var(--paperly-heading-font);
+	font-weight: var(--paperly-heading-weight);
+	line-height: 1.15;
+	letter-spacing: 0.01em;
+	margin: 0 0 1rem;
+	color: var(--wp--preset--color--contrast);
+}
+h1, .wp-block-heading.h1 { font-size: clamp(3.5rem, 9vw, 6rem); font-weight: 400; }
+h2 { font-size: clamp(2rem, 4vw, 3rem); }
+h3 { font-size: clamp(1.25rem, 2.5vw, 1.6rem); }
+p { margin: 0 0 1rem; }
+a { color: var(--wp--preset--color--primary); text-decoration: none; }
+strong { font-weight: 600; }
+
+/* --- Color / font utility classes (as WordPress emits them) -------------- */
+.has-base-color { color: var(--wp--preset--color--base); }
+.has-surface-color { color: var(--wp--preset--color--surface); }
+.has-contrast-color { color: var(--wp--preset--color--contrast); }
+.has-muted-color { color: var(--wp--preset--color--muted); }
+.has-primary-color { color: var(--wp--preset--color--primary); }
+.has-accent-color { color: var(--wp--preset--color--accent); }
+.has-base-background-color { background-color: var(--wp--preset--color--base); }
+.has-surface-background-color { background-color: var(--wp--preset--color--surface); }
+.has-contrast-background-color { background-color: var(--wp--preset--color--contrast); }
+.has-primary-background-color { background-color: var(--wp--preset--color--primary); }
+.has-cormorant-font-family { font-family: var(--wp--preset--font-family--cormorant); }
+.has-great-vibes-font-family { font-family: var(--wp--preset--font-family--great-vibes); }
+.has-tenor-sans-font-family { font-family: var(--wp--preset--font-family--tenor-sans); }
+.has-inter-font-family { font-family: var(--wp--preset--font-family--inter); }
+.has-pinyon-script-font-family { font-family: var(--wp--preset--font-family--pinyon-script); }
+.has-mulish-font-family { font-family: var(--wp--preset--font-family--mulish); }
+.has-text-align-center { text-align: center; }
+
+/* --- Layout emulation (constrained + full) ------------------------------- */
+.wp-block-group {
+	padding-inline: clamp(1.25rem, 5vw, 2.5rem);
+}
+.wp-block-group > * {
+	max-width: var(--paperly-content);
+	margin-inline: auto;
+}
+.wp-block-group > .wp-block-image.alignfull,
+.wp-block-group > .alignfull {
+	max-width: none;
+	margin-inline: 0;
+	padding-inline: 0;
+}
+.alignwide { max-width: 1140px; margin-inline: auto; }
+
+/* --- Images & gallery ---------------------------------------------------- */
+.wp-block-image { margin: 0 auto; }
+.wp-block-image img { display: block; width: 100%; height: auto; }
+.wp-block-image.is-resized { width: max-content; }
+.wp-block-image.is-resized img { width: auto; }
+.wp-block-image.aligncenter { text-align: center; }
+.wp-block-gallery {
+	display: grid;
+	gap: 0.75rem;
+	margin: 0;
+}
+.wp-block-gallery.columns-3 { grid-template-columns: repeat(3, 1fr); }
+.wp-block-gallery .wp-block-image { margin: 0; }
+.wp-block-gallery .wp-block-image img { aspect-ratio: 1 / 1; object-fit: cover; border-radius: 4px; }
+
+/* --- Columns ------------------------------------------------------------- */
+.wp-block-columns { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.wp-block-column { flex: 1 1 0; min-width: 220px; }
+
+/* --- Buttons ------------------------------------------------------------- */
+.wp-block-buttons { display: flex; justify-content: center; gap: 0.75rem; list-style: none; padding: 0; }
+.wp-block-button__link {
+	display: inline-block;
+	background: var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--base);
+	border-radius: var(--paperly-button-radius);
+	padding: 0.9rem 2.25rem;
+	font-family: var(--wp--preset--font-family--jost);
+	font-size: 0.8rem;
+	font-weight: 500;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	border: 1px solid var(--wp--preset--color--primary);
+}
+.style-modern .wp-block-button__link {
+	background: var(--wp--preset--color--contrast);
+	border-color: var(--wp--preset--color--contrast);
+	color: #fff;
+}
+.style-romantic .wp-block-button__link { color: #fff; }
+
+/* --- Separator ----------------------------------------------------------- */
+.wp-block-separator {
+	border: none;
+	border-top: 1px solid currentColor;
+	width: 100px;
+	margin: 1.5rem auto;
+	opacity: 0.4;
+}
+.wp-block-separator.has-contrast-color { color: var(--wp--preset--color--contrast); }

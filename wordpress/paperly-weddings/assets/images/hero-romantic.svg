@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hero background — replace with your photo">
+  <defs>
+    <radialGradient id="gr" cx="50%" cy="44%" r="84%">
+      <stop offset="0%" stop-color="#FEF5F1"/>
+      <stop offset="66%" stop-color="#F7E2DA"/>
+      <stop offset="100%" stop-color="#F0D2C9"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#gr)"/>
+  <g fill="none" stroke="#C98B8B" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round">
+    <path d="M120 170 C 240 110, 380 150, 440 270"/>
+    <path d="M440 270 C 380 235, 310 240, 255 265"/>
+    <path d="M440 270 C 450 200, 410 150, 350 125"/>
+    <path d="M1480 170 C 1360 110, 1220 150, 1160 270"/>
+    <path d="M1160 270 C 1220 235, 1290 240, 1345 265"/>
+    <path d="M1160 270 C 1150 200, 1190 150, 1250 125"/>
+  </g>
+  <g fill="#9DAE8B" fill-opacity="0.5">
+    <circle cx="180" cy="150" r="9"/><circle cx="250" cy="125" r="7"/><circle cx="330" cy="142" r="8"/>
+    <circle cx="1420" cy="150" r="9"/><circle cx="1350" cy="125" r="7"/><circle cx="1270" cy="142" r="8"/>
+  </g>
+</svg>

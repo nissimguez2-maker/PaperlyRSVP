@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hero background — replace with your photo">
+  <defs>
+    <linearGradient id="gm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F8F8F5"/>
+      <stop offset="100%" stop-color="#EAEAE5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#gm)"/>
+  <rect x="96" y="96" width="1408" height="808" fill="none" stroke="#141414" stroke-opacity="0.28" stroke-width="1"/>
+</svg>

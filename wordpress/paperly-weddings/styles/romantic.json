@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 3,
+  "title": "Romantic & floral",
+  "settings": {
+    "color": {
+      "palette": [
+        { "slug": "base", "color": "#FDF7F4", "name": "Base" },
+        { "slug": "surface", "color": "#F7E8E3", "name": "Surface" },
+        { "slug": "contrast", "color": "#4A3B3B", "name": "Contrast" },
+        { "slug": "muted", "color": "#A98C8C", "name": "Muted" },
+        { "slug": "primary", "color": "#C98B8B", "name": "Primary" },
+        { "slug": "accent", "color": "#9DAE8B", "name": "Accent" },
+        { "slug": "line", "color": "#EBD7D0", "name": "Line" }
+      ]
+    }
+  },
+  "styles": {
+    "typography": {
+      "fontFamily": "var(--wp--preset--font-family--mulish)",
+      "fontWeight": "300",
+      "letterSpacing": "0.012em",
+      "lineHeight": "1.85"
+    },
+    "elements": {
+      "heading": {
+        "typography": { "fontFamily": "var(--wp--preset--font-family--cormorant)", "fontWeight": "500" }
+      },
+      "link": { "color": { "text": "var(--wp--preset--color--primary)" } },
+      "button": {
+        "border": { "radius": "999px" },
+        "color": { "background": "var(--wp--preset--color--primary)", "text": "#ffffff" },
+        ":hover": { "color": { "background": "var(--wp--preset--color--contrast)" } }
+      }
+    }
+  }
+}

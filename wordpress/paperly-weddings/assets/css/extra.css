@@ -1,0 +1,85 @@
+/*
+ * Paperly Weddings — extras.
+ * Small, theme-wide helpers used by the three invitation patterns. Everything
+ * uses logical properties so it mirrors correctly for Hebrew / RTL sites.
+ */
+
+/* --- Tally RSVP slot ----------------------------------------------------- */
+/* The empty state shown until a Tally form is pasted in (see TALLY-RSVP.md). */
+.paperly-rsvp {
+	max-width: 640px;
+	margin-inline: auto;
+}
+.paperly-rsvp iframe {
+	width: 1px;
+	min-width: 100%;
+	border: 0;
+}
+.paperly-rsvp__placeholder {
+	border: 1px dashed var(--wp--preset--color--line, #ddd);
+	border-radius: 14px;
+	padding: clamp(1.5rem, 5vw, 2.75rem);
+	text-align: center;
+	color: var(--wp--preset--color--muted, #888);
+	font-size: 0.95rem;
+	line-height: 1.7;
+}
+
+/* --- Decorative bits ----------------------------------------------------- */
+/* A thin centred rule used between sections / under headings. */
+.paperly-rule {
+	display: block;
+	width: 64px;
+	height: 1px;
+	margin-inline: auto;
+	background: currentColor;
+	opacity: 0.35;
+}
+
+/* "Eyebrow" label above headings — small, spaced, uppercase. */
+.paperly-eyebrow {
+	text-transform: uppercase;
+	letter-spacing: 0.32em;
+	font-size: 0.72rem;
+}
+
+/* Names rendered in a script face on the classic / romantic looks. */
+.paperly-script {
+	line-height: 1.05;
+}
+
+/* --- Gentle scroll reveal ----------------------------------------------- */
+/* Sections fade/rise in once; respects reduced-motion and never hides content
+ * when JS/animation is unavailable (starts visible, only animates if supported). */
+@media (prefers-reduced-motion: no-preference) {
+	@supports (animation-timeline: view()) {
+		.paperly-reveal {
+			animation: paperly-rise linear both;
+			animation-timeline: view();
+			animation-range: entry 0% cover 22%;
+		}
+	}
+}
+@keyframes paperly-rise {
+	from { opacity: 0; transform: translateY(28px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Hero helpers -------------------------------------------------------- */
+/* Full-height hero that vertically centres the couple's names over the photo.
+ * Heroes use a light placeholder + dark text, so no scrim is needed; when a
+ * darker real photo is added, switch the text colour to white in the editor
+ * (and, if wanted, set --paperly-scrim above 0 for the optional overlay). */
+.paperly-hero {
+	min-height: 90svh;
+	display: grid;
+	align-content: center;
+}
+.paperly-hero[style*="--paperly-scrim"]::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, var(--paperly-scrim, 0));
+	pointer-events: none;
+}
+.paperly-hero > * { position: relative; z-index: 1; }

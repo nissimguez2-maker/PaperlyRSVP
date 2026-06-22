@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Replace with a photo">
+  <rect width="800" height="600" fill="#EFE7D8"/>
+  <g fill="none" stroke="#B5A789" stroke-width="2">
+    <circle cx="400" cy="250" r="50"/>
+    <path d="M320 360 q80 -64 160 0"/>
+  </g>
+  <text x="400" y="470" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="4" fill="#9C8F76">PHOTO</text>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" role="img" aria-label="Botanical divider">
+  <g fill="none" stroke="#9DAE8B" stroke-width="1.6" stroke-linecap="round">
+    <path d="M20 40 H 95"/>
+    <path d="M145 40 H 220"/>
+    <path d="M120 40 m-12 0 a12 12 0 1 0 24 0 a12 12 0 1 0 -24 0" stroke="#C98B8B"/>
+    <path d="M60 40 q8 -14 22 -10 M82 30 q-10 -10 -22 -6 M95 40 q-6 14 -20 12"/>
+    <path d="M180 40 q-8 -14 -22 -10 M158 30 q10 -10 22 -6 M145 40 q6 14 20 12"/>
+  </g>
+</svg>

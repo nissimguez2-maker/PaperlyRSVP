@@ -1,0 +1,21 @@
+/*
+Theme Name: Paperly Weddings
+Theme URI: https://paperly.example
+Author: Paperly
+Author URI: https://paperly.example
+Description: A premium one-page wedding invitation block theme. Ships with three ready-made looks — Classic & elegant, Modern & minimal, and Romantic & floral — each as a full-page pattern plus a matching style variation. Built for the WordPress block editor (no page-builder plugin required), RTL-ready, with a drop-in Tally RSVP slot.
+Requires at least: 6.5
+Tested up to: 6.7
+Requires PHP: 7.4
+Version: 1.0.0
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: paperly-weddings
+Tags: full-site-editing, block-patterns, one-page, wedding, rtl-language-support, custom-colors, custom-menu, editor-style, featured-images, threaded-comments, translation-ready
+*/
+
+/*
+ * Block themes are styled almost entirely from theme.json and the patterns.
+ * This file is required by WordPress for the theme header above; visual rules
+ * live in theme.json + assets/css/extra.css (enqueued from functions.php).
+ */
